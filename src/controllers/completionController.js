@@ -11,14 +11,13 @@ async function getCompletions(req, res) {
 
   const { Items } = await docClient.send(new QueryCommand({
     TableName: Tables.COMPLETIONS,
-    KeyConditionExpression: "userId = :uid AND begins_with(taskId_periodKey, :prefix)",
-    ExpressionAttributeValues: { ":uid": userId, ":prefix": "" },
-    FilterExpression: "periodKey = :pk",
+    IndexName: "periodKey-index",
+    KeyConditionExpression: "periodKey = :pk AND userId = :uid",
+    ExpressionAttributeValues: { ":pk": periodKey, ":uid": userId },
   }));
 
-  const filtered = (Items || []).filter((i) => i.periodKey === periodKey);
   const completions = {};
-  for (const row of filtered) {
+  for (const row of (Items || [])) {
     completions[row.taskId] = row.completed_at;
   }
   res.json(completions);
