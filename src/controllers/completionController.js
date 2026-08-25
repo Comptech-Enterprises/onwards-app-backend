@@ -74,4 +74,30 @@ async function toggleTask(req, res) {
   res.json({ ok: true, status: "checked" });
 }
 
-module.exports = { getCompletions, getAllCompletions, toggleTask };
+async function clearCompletions(req, res) {
+  const userId = req.params.userId || req.user.id;
+  const periodKey = req.query.date || todayKey();
+
+  if (userId !== req.user.id && req.user.role !== "manager") {
+    return res.status(403).json({ error: "Managers only." });
+  }
+
+  const { Items } = await docClient.send(new QueryCommand({
+    TableName: Tables.COMPLETIONS,
+    IndexName: "periodKey-index",
+    KeyConditionExpression: "periodKey = :pk AND userId = :uid",
+    ExpressionAttributeValues: { ":pk": periodKey, ":uid": userId },
+  }));
+
+  const items = Items || [];
+  for (const row of items) {
+    await docClient.send(new DeleteCommand({
+      TableName: Tables.COMPLETIONS,
+      Key: { userId: row.userId, taskId_periodKey: row.taskId_periodKey },
+    }));
+  }
+
+  res.json({ ok: true, deleted: items.length });
+}
+
+module.exports = { getCompletions, getAllCompletions, toggleTask, clearCompletions };

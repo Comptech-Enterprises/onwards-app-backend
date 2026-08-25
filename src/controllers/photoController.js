@@ -144,4 +144,32 @@ async function deletePhoto(req, res) {
   res.json({ ok: true });
 }
 
-module.exports = { getPhotos, getAllPhotos, uploadPhoto, deletePhoto };
+async function clearPhotos(req, res) {
+  const userId = req.params.userId || req.user.id;
+  const periodKey = req.query.date || todayKey();
+
+  if (userId !== req.user.id && req.user.role !== "manager") {
+    return res.status(403).json({ error: "Managers only." });
+  }
+
+  const userPeriod = `${userId}#${periodKey}`;
+  const { Items } = await docClient.send(new QueryCommand({
+    TableName: Tables.CHECKLIST_PHOTOS,
+    IndexName: "userPeriod-index",
+    KeyConditionExpression: "userPeriod = :up",
+    ExpressionAttributeValues: { ":up": userPeriod },
+  }));
+
+  const items = Items || [];
+  for (const row of items) {
+    await deleteFromR2(row.photo_url);
+    await docClient.send(new DeleteCommand({
+      TableName: Tables.CHECKLIST_PHOTOS,
+      Key: { id: row.id },
+    }));
+  }
+
+  res.json({ ok: true, deleted: items.length });
+}
+
+module.exports = { getPhotos, getAllPhotos, uploadPhoto, deletePhoto, clearPhotos };
