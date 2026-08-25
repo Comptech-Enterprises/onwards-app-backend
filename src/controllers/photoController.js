@@ -1,5 +1,6 @@
 const { ScanCommand, QueryCommand, GetCommand, PutCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
 const { docClient, Tables } = require("../config/db");
+const { uploadToR2, deleteFromR2 } = require("../config/r2");
 
 const PHOTO_LIMITS = {
   Pantry: { min: 1, max: 4 },
@@ -77,7 +78,7 @@ async function uploadPhoto(req, res) {
     return res.status(400).json({ error: `Up to ${limits.max} ${category} photos.` });
   }
 
-  const photoUrl = `/uploads/${req.file.filename}`;
+  const photoUrl = await uploadToR2(req.file.buffer, req.file.originalname, req.file.mimetype);
   const id = `p-${Date.now()}`;
 
   await docClient.send(new PutCommand({
@@ -132,6 +133,8 @@ async function deletePhoto(req, res) {
   if (ticked.length > 0) {
     return res.status(400).json({ error: "Photos cannot be removed after a task is ticked." });
   }
+
+  await deleteFromR2(photo.photo_url);
 
   await docClient.send(new DeleteCommand({
     TableName: Tables.CHECKLIST_PHOTOS,
