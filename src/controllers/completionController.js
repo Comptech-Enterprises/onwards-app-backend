@@ -1,4 +1,4 @@
-const { QueryCommand, GetCommand, PutCommand } = require("@aws-sdk/lib-dynamodb");
+const { QueryCommand, GetCommand, PutCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
 const { docClient, Tables } = require("../config/db");
 
 function todayKey() {
@@ -53,7 +53,11 @@ async function toggleTask(req, res) {
   }));
 
   if (existing) {
-    return res.status(400).json({ ok: false, error: "Ticked items cannot be unmarked." });
+    await docClient.send(new DeleteCommand({
+      TableName: Tables.COMPLETIONS,
+      Key: { userId, taskId_periodKey: sortKey },
+    }));
+    return res.json({ ok: true, status: "unchecked" });
   }
 
   await docClient.send(new PutCommand({
@@ -67,7 +71,7 @@ async function toggleTask(req, res) {
     },
   }));
 
-  res.json({ ok: true });
+  res.json({ ok: true, status: "checked" });
 }
 
 module.exports = { getCompletions, getAllCompletions, toggleTask };
