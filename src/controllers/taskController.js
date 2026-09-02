@@ -39,7 +39,7 @@ async function getTasksByCategory(req, res) {
   res.json((Items || []).sort((a, b) => a.id.localeCompare(b.id)));
 }
 
-const VALID_CATEGORIES = ["Washroom", "Pantry", "Common Areas", "Infra & Safety", "Soft Services"];
+const VALID_CATEGORIES = ["Washroom", "Pantry", "Common Areas", "Infra & Safety", "Soft Services", "Meeting Rooms"];
 
 async function createTask(req, res) {
   const { category, name, frequency, weekday, monthDay, assignTo } = req.body;
