@@ -42,6 +42,8 @@ async function login(req, res) {
       location: user.location,
       employeeCode: user.employee_code,
       phone: user.phone,
+      designation: user.designation || null,
+      supervisorId: user.supervisor_id || null,
     },
   });
 }
@@ -64,6 +66,8 @@ async function me(req, res) {
     location: Item.location,
     employeeCode: Item.employee_code,
     phone: Item.phone,
+    designation: Item.designation || null,
+    supervisorId: Item.supervisor_id || null,
   });
 }
 

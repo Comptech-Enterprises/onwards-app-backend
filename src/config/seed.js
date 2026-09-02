@@ -8,17 +8,25 @@ const USERS = [
   { id: "m2", name: "Mannat Jain", username: "mannat", password: "Mannat@123", role: "manager", location: "All centres" },
   { id: "m3", name: "Anil Purdhani", username: "anil", password: "Anil@123", role: "manager", location: "All centres" },
   { id: "e-ravi", name: "Ravi", username: "ravi", password: "Ravi@123", role: "employee", location: "All centres", employeeCode: "RAVI01" },
-  { id: "e1", name: "Anubhav", username: "anubhav", password: "Anubhav@123", role: "employee", location: "Okhla Phase 2", employeeCode: "EMP01", phone: "8527445545" },
-  { id: "e2", name: "Arpit Tanwar", username: "arpit", password: "Arpit@123", role: "employee", location: "Okhla Phase 3", employeeCode: "EMP02", phone: "9717289816" },
-  { id: "e3", name: "Amit", username: "amit", password: "Amit@123", role: "employee", location: "Okhla Phase 3", employeeCode: "EMP03", phone: "9210905185" },
-  { id: "e4", name: "Mukund", username: "mukund", password: "Mukund@123", role: "employee", location: "Okhla Phase 3", employeeCode: "EMP04", phone: "9990325738" },
-  { id: "e5", name: "Kamal Khanna", username: "kamal", password: "Kamal@123", role: "employee", location: "Noida Sector 126", employeeCode: "EMP05", phone: "7206605207" },
-  { id: "e6", name: "Abhishek Dalal", username: "abhishek", password: "Abhishek@123", role: "employee", location: "Udyog Vihar Phase 4", employeeCode: "EMP06", phone: "9220407273" },
-  { id: "e7", name: "Sourabh", username: "sourabh", password: "Sourabh@123", role: "employee", location: "Udyog Vihar Phase 4", employeeCode: "EMP07", phone: "8307759594" },
-  { id: "e8", name: "Sameer", username: "sameer", password: "Sameer@123", role: "employee", location: "Emaar Capital", employeeCode: "EMP08", phone: "7042933051" },
-  { id: "e9", name: "Harish", username: "harish", password: "Harish@123", role: "employee", location: "151, Okhla Phase 3", employeeCode: "EMP09", phone: "8130293530" },
-  { id: "e10", name: "Akansha", username: "akansha", password: "Akansha@123", role: "employee", location: "ECE House, Connaught Place", employeeCode: "EMP10", phone: "8260998500" },
-  { id: "e11", name: "Sameer", username: "sameer.ece", password: "Sameer@123", role: "employee", location: "ECE House, Connaught Place", employeeCode: "EMP11", phone: "9711478718" },
+
+  // Community Managers
+  { id: "e1", name: "Anubhav", username: "anubhav", password: "Anubhav@123", role: "employee", designation: "cm", location: "Okhla Phase 2", employeeCode: "EMP01", phone: "8527445545" },
+  { id: "e2", name: "Arpit Tanwar", username: "arpit", password: "Arpit@123", role: "employee", designation: "cm", location: "Okhla Phase 3", employeeCode: "EMP02", phone: "9717289816" },
+  { id: "e5", name: "Kamal Khanna", username: "kamal", password: "Kamal@123", role: "employee", designation: "cm", location: "Noida Sector 126", employeeCode: "EMP05", phone: "7206605207" },
+  { id: "e6", name: "Abhishek Dalal", username: "abhishek", password: "Abhishek@123", role: "employee", designation: "cm", location: "Udyog Vihar Phase 4", employeeCode: "EMP06", phone: "9220407273" },
+  { id: "e12", name: "Kartik Sharma", username: "kartik", password: "Kartik@123", role: "employee", designation: "cm", location: "Mohan Cooperative", employeeCode: "EMP12" },
+  { id: "e10", name: "Akansha", username: "akansha", password: "Akansha@123", role: "employee", designation: "cm", location: "ECE House, Connaught Place", employeeCode: "EMP10", phone: "8260998500" },
+
+  // Supervisors
+  { id: "e13", name: "Akash", username: "akash", password: "Akash@123", role: "employee", designation: "supervisor", supervisorId: "e1", location: "Okhla Phase 2", employeeCode: "EMP13", phone: "9953313194" },
+  { id: "e14", name: "Saroj", username: "saroj", password: "Saroj@123", role: "employee", designation: "supervisor", supervisorId: "e1", location: "Okhla Phase 2", employeeCode: "EMP14" },
+  { id: "e3", name: "Amit", username: "amit", password: "Amit@123", role: "employee", designation: "supervisor", supervisorId: "e2", location: "Okhla Phase 3", employeeCode: "EMP03", phone: "9210905185" },
+  { id: "e4", name: "Mukund", username: "mukund", password: "Mukund@123", role: "employee", designation: "supervisor", supervisorId: "e2", location: "Okhla Phase 3", employeeCode: "EMP04", phone: "9990325738" },
+  { id: "e9", name: "Harish", username: "harish", password: "Harish@123", role: "employee", designation: "supervisor", supervisorId: "e2", location: "151, Okhla Phase 3", employeeCode: "EMP09", phone: "8130293530" },
+  { id: "e7", name: "Sourabh", username: "sourabh", password: "Sourabh@123", role: "employee", designation: "supervisor", supervisorId: "e6", location: "Udyog Vihar Phase 4", employeeCode: "EMP07", phone: "8307759594" },
+  { id: "e15", name: "Bhardwaj", username: "bhardwaj", password: "Bhardwaj@123", role: "employee", designation: "supervisor", supervisorId: "e12", location: "Mohan Cooperative", employeeCode: "EMP15" },
+  { id: "e8", name: "Sameer", username: "sameer", password: "Sameer@123", role: "employee", designation: "supervisor", supervisorId: "e6", location: "Emaar Capital", employeeCode: "EMP08", phone: "7042933051" },
+  { id: "e11", name: "Sameer", username: "sameer.ece", password: "Sameer@123", role: "employee", designation: "supervisor", supervisorId: "e10", location: "ECE House, Connaught Place", employeeCode: "EMP11", phone: "9711478718" },
 ];
 
 const TASKS = [
@@ -121,25 +129,7 @@ const TASKS = [
   { id: "t100", category: "Soft Services", name: "No waste bags/black bags visible in common areas" },
 ];
 
-const CATEGORY_REVIEWERS = {
-  "Infra & Safety": { name: "Ravi", username: "ravi" },
-};
-
-function isDedicatedReviewer(user) {
-  return Object.values(CATEGORY_REVIEWERS).some(
-    (owner) => user.username.toLowerCase() === owner.username.toLowerCase()
-  );
-}
-
-function taskIdsForUser(user) {
-  if (user.role !== "employee") return [];
-  const dedicated = isDedicatedReviewer(user);
-  return TASKS.filter((t) => {
-    const owner = CATEGORY_REVIEWERS[t.category];
-    if (dedicated) return !!owner;
-    return !owner;
-  }).map((t) => t.id);
-}
+const ALL_TASK_IDS = TASKS.map((t) => t.id);
 
 async function batchWrite(table, items) {
   const chunks = [];
@@ -179,6 +169,8 @@ async function seed() {
     if (user.location) item.location = user.location;
     if (user.employeeCode) item.employee_code = user.employeeCode;
     if (user.phone) item.phone = user.phone;
+    if (user.designation) item.designation = user.designation;
+    if (user.supervisorId) item.supervisor_id = user.supervisorId;
     await docClient.send(new PutCommand({
       TableName: Tables.USERS,
       Item: item,
@@ -189,8 +181,7 @@ async function seed() {
   const userTaskItems = [];
   for (const user of USERS) {
     if (user.role !== "employee") continue;
-    const taskIds = taskIdsForUser(user);
-    for (const taskId of taskIds) {
+    for (const taskId of ALL_TASK_IDS) {
       userTaskItems.push({ userId: user.id, taskId });
     }
   }

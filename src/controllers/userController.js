@@ -32,7 +32,7 @@ async function listEmployees(req, res) {
 }
 
 async function createUser(req, res) {
-  const { name, username, password, location, employeeCode, phone } = req.body;
+  const { name, username, password, location, employeeCode, phone, designation, supervisorId } = req.body;
   const uname = (username || "").trim().toLowerCase();
   const code = (employeeCode || "").trim();
 
@@ -63,29 +63,31 @@ async function createUser(req, res) {
   const id = `e-${Date.now()}`;
   const hash = await bcrypt.hash(password, 10);
 
+  const item = {
+    id,
+    name: name.trim(),
+    username: uname,
+    password: hash,
+    role: "employee",
+    location: location || null,
+    employee_code: code,
+    phone: phone || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  if (designation) item.designation = designation;
+  if (supervisorId) item.supervisor_id = supervisorId;
+
   await docClient.send(new PutCommand({
     TableName: Tables.USERS,
-    Item: {
-      id,
-      name: name.trim(),
-      username: uname,
-      password: hash,
-      role: "employee",
-      location: location || null,
-      employee_code: code,
-      phone: phone || null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
+    Item: item,
   }));
 
-  const { Items: nonInfraTasks } = await docClient.send(new ScanCommand({
+  const { Items: allTasks } = await docClient.send(new ScanCommand({
     TableName: Tables.TASKS,
-    FilterExpression: "category <> :cat",
-    ExpressionAttributeValues: { ":cat": "Infra & Safety" },
   }));
 
-  for (const task of (nonInfraTasks || [])) {
+  for (const task of (allTasks || [])) {
     await docClient.send(new PutCommand({
       TableName: Tables.USER_TASKS,
       Item: { userId: id, taskId: task.id },
@@ -152,6 +154,8 @@ function formatUser(row) {
     location: row.location,
     employeeCode: row.employee_code,
     phone: row.phone,
+    designation: row.designation || null,
+    supervisorId: row.supervisor_id || null,
   };
 }
 
