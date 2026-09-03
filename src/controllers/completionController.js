@@ -43,7 +43,23 @@ async function getAllCompletions(req, res) {
 
 async function toggleTask(req, res) {
   const { taskId } = req.params;
-  const userId = req.user.id;
+  const forUserId = req.body?.forUserId;
+  let userId = req.user.id;
+
+  if (forUserId && forUserId !== userId) {
+    const { Items } = await docClient.send(new QueryCommand({
+      TableName: Tables.USERS,
+      IndexName: "username-index",
+      KeyConditionExpression: "username = :u",
+      ExpressionAttributeValues: { ":u": req.user.username },
+    }));
+    const caller = Items?.[0];
+    if (!caller || (caller.designation !== "cm" && caller.role !== "manager")) {
+      return res.status(403).json({ error: "Not authorized to tick for another user." });
+    }
+    userId = forUserId;
+  }
+
   const periodKey = todayKey();
   const sortKey = `${taskId}#${periodKey}`;
 

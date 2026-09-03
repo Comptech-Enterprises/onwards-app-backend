@@ -7,15 +7,17 @@ const USERS = [
   { id: "m1", name: "Ops Manager", username: "manager", password: "Manager@123", role: "manager", location: "All centres" },
   { id: "m2", name: "Mannat Jain", username: "mannat", password: "Mannat@123", role: "manager", location: "All centres" },
   { id: "m3", name: "Anil Purdhani", username: "anil", password: "Anil@123", role: "manager", location: "All centres" },
-  { id: "e-ravi", name: "Ravi", username: "ravi", password: "Ravi@123", role: "employee", location: "All centres", employeeCode: "RAVI01" },
+  { id: "m4", name: "Vineeta Sanduja", username: "vineeta", password: "Vineeta@123", role: "manager", location: "All centres", phone: "8586007404" },
+  { id: "m-ravi", name: "Ravi Pawar", username: "ravi", password: "Ravi@123", role: "manager", location: "All centres", phone: "9220407270" },
+  { id: "m-abhishek-g", name: "Abhishek Gupta", username: "abhishek.gupta", password: "Abhishek@123", role: "manager", location: "All centres", phone: "9220407279" },
 
   // Community Managers
-  { id: "e1", name: "Anubhav", username: "anubhav", password: "Anubhav@123", role: "employee", designation: "cm", location: "Okhla Phase 2", employeeCode: "EMP01", phone: "8527445545" },
-  { id: "e2", name: "Arpit Tanwar", username: "arpit", password: "Arpit@123", role: "employee", designation: "cm", location: "Okhla Phase 3", employeeCode: "EMP02", phone: "9717289816" },
-  { id: "e5", name: "Kamal Khanna", username: "kamal", password: "Kamal@123", role: "employee", designation: "cm", location: "Noida Sector 126", employeeCode: "EMP05", phone: "7206605207" },
-  { id: "e6", name: "Abhishek Dalal", username: "abhishek", password: "Abhishek@123", role: "employee", designation: "cm", location: "Udyog Vihar Phase 4", employeeCode: "EMP06", phone: "9220407273" },
-  { id: "e12", name: "Kartik Sharma", username: "kartik", password: "Kartik@123", role: "employee", designation: "cm", location: "Mohan Cooperative", employeeCode: "EMP12" },
-  { id: "e10", name: "Akansha", username: "akansha", password: "Akansha@123", role: "employee", designation: "cm", location: "ECE House, Connaught Place", employeeCode: "EMP10", phone: "8260998500" },
+  { id: "e1", name: "Anubhav", username: "anubhav", password: "Anubhav@123", role: "employee", designation: "cm", location: "Okhla Phase 2", employeeCode: "EMP01", phone: "8527445545", managerId: "m-ravi" },
+  { id: "e2", name: "Arpit Tanwar", username: "arpit", password: "Arpit@123", role: "employee", designation: "cm", location: "Okhla Phase 3", employeeCode: "EMP02", phone: "9717289816", managerId: "m-ravi" },
+  { id: "e5", name: "Kamal Khanna", username: "kamal", password: "Kamal@123", role: "employee", designation: "cm", location: "Noida Sector 126", employeeCode: "EMP05", phone: "7206605207", managerId: "m-abhishek-g" },
+  { id: "e6", name: "Abhishek Dalal", username: "abhishek", password: "Abhishek@123", role: "employee", designation: "cm", location: "Udyog Vihar Phase 4", employeeCode: "EMP06", phone: "9220407273", managerId: "m-ravi" },
+  { id: "e12", name: "Kartik Sharma", username: "kartik", password: "Kartik@123", role: "employee", designation: "cm", location: "Mohan Cooperative", employeeCode: "EMP12", managerId: "m-abhishek-g" },
+  { id: "e10", name: "Akansha", username: "akansha", password: "Akansha@123", role: "employee", designation: "cm", location: "ECE House, Connaught Place", employeeCode: "EMP10", phone: "8260998500", managerId: "m-ravi" },
 
   // Supervisors
   { id: "e13", name: "Akash", username: "akash", password: "Akash@123", role: "employee", designation: "supervisor", supervisorId: "e1", location: "Okhla Phase 2", employeeCode: "EMP13", phone: "9953313194" },
@@ -171,6 +173,7 @@ async function seed() {
     if (user.phone) item.phone = user.phone;
     if (user.designation) item.designation = user.designation;
     if (user.supervisorId) item.supervisor_id = user.supervisorId;
+    if (user.managerId) item.manager_id = user.managerId;
     await docClient.send(new PutCommand({
       TableName: Tables.USERS,
       Item: item,

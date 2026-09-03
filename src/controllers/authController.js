@@ -44,6 +44,7 @@ async function login(req, res) {
       phone: user.phone,
       designation: user.designation || null,
       supervisorId: user.supervisor_id || null,
+      managerId: user.manager_id || null,
     },
   });
 }
@@ -68,6 +69,7 @@ async function me(req, res) {
     phone: Item.phone,
     designation: Item.designation || null,
     supervisorId: Item.supervisor_id || null,
+    managerId: Item.manager_id || null,
   });
 }
 

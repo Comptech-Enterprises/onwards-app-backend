@@ -77,6 +77,7 @@ async function createUser(req, res) {
   };
   if (designation) item.designation = designation;
   if (supervisorId) item.supervisor_id = supervisorId;
+  if (req.body.managerId) item.manager_id = req.body.managerId;
 
   await docClient.send(new PutCommand({
     TableName: Tables.USERS,
@@ -156,6 +157,7 @@ function formatUser(row) {
     phone: row.phone,
     designation: row.designation || null,
     supervisorId: row.supervisor_id || null,
+    managerId: row.manager_id || null,
   };
 }
 
