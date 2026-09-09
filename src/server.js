@@ -19,6 +19,7 @@ const configRoutes = require("./routes/config");
 
 const { PutCommand } = require("@aws-sdk/lib-dynamodb");
 const { docClient, Tables } = require("./config/db");
+const nodemailer = require("nodemailer");
 
 const app = express();
 
@@ -50,22 +51,50 @@ app.get("/api/health", (req, res) => {
 app.use(async (err, req, res, next) => {
   console.error(err.stack);
 
+  const errorId = `err-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const timestamp = new Date().toISOString();
+
   try {
     await docClient.send(new PutCommand({
       TableName: Tables.ERROR_LOGS,
       Item: {
-        id: `err-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id: errorId,
         level: "error",
         message: err.message || "Unknown error",
         stack: err.stack || null,
         endpoint: req.path || null,
         method: req.method || null,
         status_code: 500,
-        created_at: new Date().toISOString(),
+        created_at: timestamp,
       },
     }));
   } catch (logErr) {
     console.error("Failed to write error log:", logErr.message);
+  }
+
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  const errorNotifyTo = process.env.ERROR_NOTIFY_TO;
+  if (smtpUser && smtpPass && errorNotifyTo) {
+    try {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: smtpUser, pass: smtpPass },
+      });
+      await transporter.sendMail({
+        from: `Onwards Error Alert <${smtpUser}>`,
+        to: errorNotifyTo,
+        subject: `[ERROR] ${req.method} ${req.path} — ${err.message || "Unknown error"}`,
+        html: `<h3>Error on Onwards API</h3>
+<p><strong>ID:</strong> ${errorId}</p>
+<p><strong>Time:</strong> ${timestamp}</p>
+<p><strong>Endpoint:</strong> ${req.method} ${req.path}</p>
+<p><strong>Message:</strong> ${err.message || "Unknown error"}</p>
+<pre style="background:#f4f4f4;padding:12px;border-radius:6px;overflow-x:auto">${err.stack || "No stack trace"}</pre>`,
+      });
+    } catch (mailErr) {
+      console.error("Failed to send error email:", mailErr.message);
+    }
   }
 
   res.status(500).json({ error: "Internal server error." });
