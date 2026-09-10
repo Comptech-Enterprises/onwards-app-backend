@@ -6,10 +6,10 @@ const { docClient, Tables } = require("./db");
 const USERS = [
   // Leadership
   { id: "m-suvrat", name: "Suvrat Jain", username: "suvrat", password: "Suvrat@123", role: "manager", location: "All centres", employeeCode: "OWEMP-0001", designation: "ceo" },
-  { id: "m3", name: "Anil Purdhani", username: "anil", password: "Anil@123", role: "manager", location: "All centres", employeeCode: "OWEM-0034", designation: "co-founder" },
+  { id: "m3", name: "Anil Purdhani", username: "anil", password: "Anil@123", role: "manager", location: "All centres", employeeCode: "OWEMP-0034", designation: "co-founder" },
   { id: "m2", name: "Mannat Jain", username: "mannat", password: "Mannat@123", role: "manager", location: "All centres", employeeCode: "OWEMP-0003", designation: "marketing-head" },
   { id: "m-priyanka-j", name: "Priyanka Jain", username: "priyanka.jain", password: "Priyanka@123", role: "manager", location: "All centres", employeeCode: "OWEMP-0002", designation: "project-design-head" },
-  { id: "m-ipshita", name: "Ipshita Burman", username: "ipshita", password: "Ipshita@123", role: "manager", location: "All centres", employeeCode: "OWEMP-0029", designation: "hr-manager" },
+  { id: "m-ipshita", name: "Ipshita B. Roy", username: "ipshita", password: "Ipshita@123", role: "manager", location: "All centres", employeeCode: "OWEMP-0029", designation: "hr-manager" },
 
   // Cluster Managers
   { id: "m-ravi", name: "Ravi Pawar", username: "ravi", password: "Ravi@123", role: "manager", location: "All centres", phone: "9220407270", employeeCode: "OWEMP-0004", designation: "cluster-manager" },
@@ -21,27 +21,27 @@ const USERS = [
 
   // Sales
   { id: "m-sarshti", name: "Sarshti Singh", username: "sarshti", password: "Sarshti@123", role: "manager", location: "All centres", employeeCode: "OWEMP-0015", designation: "sales-manager" },
-  { id: "e-shreya", name: "Shreya Saran", username: "shreya", password: "Shreya@123", role: "employee", designation: "lead-inside-sales", supervisorId: "m-sarshti", location: "All centres", employeeCode: "OWEM-0035" },
+  { id: "e-shreya", name: "Shreya Saran", username: "shreya", password: "Shreya@123", role: "employee", designation: "lead-inside-sales", supervisorId: "m-sarshti", location: "All centres", employeeCode: "OWEMP-0035" },
 
   // Business Operations
   { id: "m4", name: "Vineeta Sanduja", username: "vineeta", password: "Vineeta@123", role: "manager", location: "All centres", phone: "8586007404", employeeCode: "OWEMP-0018", designation: "business-ops-head" },
 
   // Operational Maintenance
   { id: "m-sandeep", name: "Sandeep Mishra", username: "sandeep", password: "Sandeep@123", role: "manager", location: "All centres", employeeCode: "OWEMP-0019", designation: "ops-maintenance" },
-  { id: "e-devendra", name: "Devendra Kumar", username: "devendra", password: "Devendra@123", role: "employee", designation: "maintenance", supervisorId: "m-sandeep", location: "All centres", employeeCode: "OWEMP-0024" },
+  { id: "e-devendra", name: "Devendra Kumar Mehta", username: "devendra", password: "Devendra@123", role: "employee", designation: "maintenance", supervisorId: "m-sandeep", location: "All centres", employeeCode: "OWEMP-0024" },
 
   // Centre Managers — under Ravi Pawar
   { id: "e2", name: "Arpit Tanwar", username: "arpit", password: "Arpit@123", role: "employee", designation: "cm", location: "Okhla Phase 3", employeeCode: "OWEMP-0007", phone: "9717289816", managerId: "m-ravi" },
   { id: "e6", name: "Abhishek Dalal", username: "abhishek", password: "Abhishek@123", role: "employee", designation: "cm", location: "Udyog Vihar Phase 4", employeeCode: "OWEMP-0012", phone: "9220407273", managerId: "m-ravi" },
   { id: "e1", name: "Anubhav", username: "anubhav", password: "Anubhav@123", role: "employee", designation: "cm", location: "Okhla Phase 2", employeeCode: "OWEMP-0022", phone: "8527445545", managerId: "m-ravi" },
-  { id: "e10", name: "Akanksha Mohan", username: "akanksha", password: "Akanksha@123", role: "employee", designation: "cm", location: "ECE House, Connaught Place", employeeCode: "OWEMP-0032", phone: "8260998500", managerId: "m-ravi" },
+  { id: "e10", name: "Akanksha Mohanty", username: "akanksha", password: "Akanksha@123", role: "employee", designation: "cm", location: "ECE House, Connaught Place", employeeCode: "OWEMP-0032", phone: "8260998500", managerId: "m-ravi" },
 
   // Centre Managers — under Abhishek Kumar
   { id: "e5", name: "Kamal Khanna", username: "kamal", password: "Kamal@123", role: "employee", designation: "cm", location: "Noida Sector 126", employeeCode: "OWEMP-0023", phone: "7206605207", managerId: "m-abhishek-g" },
-  { id: "e12", name: "Kartik Sharma", username: "kartik", password: "Kartik@123", role: "employee", designation: "cm", location: "Mohan Cooperative", employeeCode: "OWEM-0038", managerId: "m-abhishek-g" },
+  { id: "e12", name: "Kartik Sharma", username: "kartik", password: "Kartik@123", role: "employee", designation: "cm", location: "Mohan Cooperative", employeeCode: "OWEMP-0038", managerId: "m-abhishek-g" },
 
   // Facility Supervisors — under Arpit Tanwar
-  { id: "e4", name: "Mukund Raj Chouhan", username: "mukund", password: "Mukund@123", role: "employee", designation: "supervisor", supervisorId: "e2", location: "Okhla Phase 3", employeeCode: "OWEMP-0010", phone: "9990325738" },
+  { id: "e4", name: "Mukund Raj Choudhary", username: "mukund", password: "Mukund@123", role: "employee", designation: "supervisor", supervisorId: "e2", location: "Okhla Phase 3", employeeCode: "OWEMP-0010", phone: "9990325738" },
   { id: "e9", name: "Harish Naagar", username: "harish", password: "Harish@123", role: "employee", designation: "supervisor", supervisorId: "e2", location: "151, Okhla Phase 3", employeeCode: "OWEMP-0030", phone: "8130293530" },
   { id: "e3", name: "Amit Kumar", username: "amit", password: "Amit@123", role: "employee", designation: "supervisor", supervisorId: "e2", location: "Okhla Phase 3", employeeCode: "OWEMP-0016", phone: "9210905185" },
 
@@ -50,18 +50,22 @@ const USERS = [
 
   // Facility Supervisors — under Anubhav
   { id: "e14", name: "Saroj Kumar", username: "saroj", password: "Saroj@123", role: "employee", designation: "supervisor", supervisorId: "e1", location: "Okhla Phase 2", employeeCode: "OWEMP-0009" },
-  { id: "e13", name: "Akash", username: "akash", password: "Akash@123", role: "employee", designation: "supervisor", supervisorId: "e1", location: "Okhla Phase 2", employeeCode: "OWEM-0040", phone: "9953313194" },
+  { id: "e13", name: "Akash Kumar", username: "akash", password: "Akash@123", role: "employee", designation: "supervisor", supervisorId: "e1", location: "Okhla Phase 2", employeeCode: "OWEMP-0040", phone: "9953313194" },
 
-  // Facility Supervisors — under Akanksha Mohan
-  { id: "e11", name: "Mohammad Sameer", username: "sameer.ece", password: "Sameer@123", role: "employee", designation: "supervisor", supervisorId: "e10", location: "ECE House, Connaught Place", employeeCode: "OWEM-0033", phone: "9711478718" },
+  // Facility Supervisors — under Akanksha Mohanty
+  { id: "e11", name: "Mohammad Sameer", username: "sameer.ece", password: "Sameer@123", role: "employee", designation: "supervisor", supervisorId: "e10", location: "ECE House, Connaught Place", employeeCode: "OWEMP-0033", phone: "9711478718" },
 
   // Under Abhishek Kumar cluster
-  { id: "e-vikas", name: "Vikas Sharma", username: "vikas", password: "Vikas@123", role: "employee", designation: "supervisor", supervisorId: "m-abhishek-g", location: "All centres", employeeCode: "OWEMP-0008" },
-  { id: "e-dileep", name: "Dileep Kumar Prasad", username: "dileep", password: "Dileep@123", role: "employee", designation: "facility-manager-tech", supervisorId: "m-abhishek-g", location: "All centres", employeeCode: "OWEMP-0028" },
+  { id: "e-vikas", name: "Vikas", username: "vikas", password: "Vikas@123", role: "employee", designation: "supervisor", supervisorId: "m-abhishek-g", location: "All centres", employeeCode: "OWEMP-0008" },
+  { id: "e-dileep", name: "Dileep Kumar Prajapat", username: "dileep", password: "Dileep@123", role: "employee", designation: "facility-manager-tech", supervisorId: "m-abhishek-g", location: "All centres", employeeCode: "OWEMP-0028" },
+  { id: "e-shiva", name: "Shiva Bhati", username: "shiva", password: "Shiva@123", role: "employee", designation: "sr-facility-executive", supervisorId: "m-abhishek-g", location: "All centres" },
 
   // Under Kamal Khanna
-  { id: "e-priyanka-k", name: "Priyanka Kashyap", username: "priyanka.k", password: "Priyanka@123", role: "employee", designation: "supervisor", supervisorId: "e5", location: "Noida Sector 126", employeeCode: "OWEMP-0025" },
-  { id: "e-shyam", name: "Shyam Sundar Yadav", username: "shyam", password: "Shyam@123", role: "employee", designation: "supervisor", supervisorId: "e5", location: "Noida Sector 126", employeeCode: "OWEMP-0026" },
+  { id: "e-priyanka-k", name: "Priyanka Kashyap", username: "priyanka.k", password: "Priyanka@123", role: "employee", designation: "front-desk-admin", supervisorId: "e5", location: "Noida Sector 126", employeeCode: "OWEMP-0025" },
+  { id: "e-shyam", name: "Shyam Sundar", username: "shyam", password: "Shyam@123", role: "employee", designation: "helpdesk-executive", supervisorId: "e5", location: "Noida Sector 126", employeeCode: "OWEMP-0026" },
+
+  // Under Kartik Sharma
+  { id: "e-arun", name: "Arun Bhardwaj", username: "arun", password: "Arun@123", role: "employee", designation: "supervisor", supervisorId: "e12", location: "Mohan Cooperative" },
 ];
 
 const TASKS = [
