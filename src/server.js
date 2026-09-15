@@ -21,7 +21,12 @@ const { PutCommand } = require("@aws-sdk/lib-dynamodb");
 const { docClient, Tables } = require("./config/db");
 const nodemailer = require("nodemailer");
 
+const http = require("http");
+const { initWebSocket } = require("./ws");
+
 const app = express();
+const server = http.createServer(app);
+initWebSocket(server);
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
@@ -101,6 +106,6 @@ app.use(async (err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

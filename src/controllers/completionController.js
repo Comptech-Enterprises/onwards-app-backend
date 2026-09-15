@@ -1,5 +1,6 @@
 const { QueryCommand, GetCommand, PutCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
 const { docClient, Tables } = require("../config/db");
+const { broadcast } = require("../ws");
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -73,9 +74,11 @@ async function toggleTask(req, res) {
       TableName: Tables.COMPLETIONS,
       Key: { userId, taskId_periodKey: sortKey },
     }));
+    broadcast("completion", { userId, taskId, status: "unchecked", periodKey });
     return res.json({ ok: true, status: "unchecked" });
   }
 
+  const completed_at = new Date().toISOString();
   await docClient.send(new PutCommand({
     TableName: Tables.COMPLETIONS,
     Item: {
@@ -83,10 +86,11 @@ async function toggleTask(req, res) {
       taskId_periodKey: sortKey,
       taskId,
       periodKey,
-      completed_at: new Date().toISOString(),
+      completed_at,
     },
   }));
 
+  broadcast("completion", { userId, taskId, status: "checked", periodKey, completed_at });
   res.json({ ok: true, status: "checked" });
 }
 
