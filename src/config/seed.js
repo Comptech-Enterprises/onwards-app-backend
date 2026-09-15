@@ -54,6 +54,7 @@ const USERS = [
 
   // Facility Supervisors — under Akanksha Mohanty
   { id: "e11", name: "Mohammad Sameer", username: "sameer.ece", password: "Sameer@123", role: "employee", designation: "supervisor", supervisorId: "e10", location: "ECE House, Connaught Place", employeeCode: "OWEMP-0033", phone: "9711478718" },
+  { id: "e-vivek", name: "Vivek Bhagwana", username: "vivek", password: "Vivek@123", role: "employee", designation: "supervisor", supervisorId: "e10", location: "ECE House, Connaught Place", phone: "8700124331" },
 
   // Under Abhishek Kumar cluster
   { id: "e-vikas", name: "Vikas", username: "vikas", password: "Vikas@123", role: "employee", designation: "supervisor", supervisorId: "m-abhishek-g", location: "All centres", employeeCode: "OWEMP-0008" },
