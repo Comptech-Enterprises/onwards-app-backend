@@ -33,7 +33,7 @@ const USERS = [
   // Centre Managers — under Ravi Pawar
   { id: "e2", name: "Arpit Tanwar", username: "arpit", password: "Arpit@123", role: "employee", designation: "cm", location: "Okhla Phase 3", employeeCode: "OWEMP-0007", phone: "9717289816", managerId: "m-ravi" },
   { id: "e6", name: "Abhishek Dalal", username: "abhishek", password: "Abhishek@123", role: "employee", designation: "cm", location: "Udyog Vihar Phase 4", employeeCode: "OWEMP-0012", phone: "9220407273", managerId: "m-ravi" },
-  { id: "e1", name: "Anubhav", username: "anubhav", password: "Anubhav@123", role: "employee", designation: "cm", location: "Okhla Phase 2", employeeCode: "OWEMP-0022", phone: "8527445545", managerId: "m-ravi" },
+  { id: "e1", name: "Anubhav", username: "anubhav", password: "Anubhav@123", role: "employee", designation: "cm", location: "E-44/3, Pocket D, Okhla Phase II", employeeCode: "OWEMP-0022", phone: "8527445545", managerId: "m-ravi" },
   { id: "e10", name: "Akanksha Mohanty", username: "akanksha", password: "Akanksha@123", role: "employee", designation: "cm", location: "ECE House, Connaught Place", employeeCode: "OWEMP-0032", phone: "8260998500", managerId: "m-ravi" },
 
   // Centre Managers — under Abhishek Kumar
@@ -49,8 +49,8 @@ const USERS = [
   { id: "e8", name: "Sameer Kumar", username: "sameer", password: "Sameer@123", role: "employee", designation: "supervisor", supervisorId: "e6", location: "Emaar Capital", employeeCode: "OWEMP-0021", phone: "7042933051" },
 
   // Facility Supervisors — under Anubhav
-  { id: "e14", name: "Saroj Kumar", username: "saroj", password: "Saroj@123", role: "employee", designation: "supervisor", supervisorId: "e1", location: "Okhla Phase 2", employeeCode: "OWEMP-0009" },
-  { id: "e13", name: "Akash Kumar", username: "akash", password: "Akash@123", role: "employee", designation: "supervisor", supervisorId: "e1", location: "Okhla Phase 2", employeeCode: "OWEMP-0040", phone: "9953313194" },
+  { id: "e14", name: "Saroj Kumar", username: "saroj", password: "Saroj@123", role: "employee", designation: "supervisor", supervisorId: "e1", location: "E-40/7, Okhla Phase II", employeeCode: "OWEMP-0009" },
+  { id: "e13", name: "Akash Kumar", username: "akash", password: "Akash@123", role: "employee", designation: "supervisor", supervisorId: "e1", location: "E-44/3, Pocket D, Okhla Phase II", employeeCode: "OWEMP-0040", phone: "9953313194" },
 
   // Facility Supervisors — under Akanksha Mohanty
   { id: "e11", name: "Mohammad Sameer", username: "sameer.ece", password: "Sameer@123", role: "employee", designation: "supervisor", supervisorId: "e10", location: "ECE House, Connaught Place", employeeCode: "OWEMP-0033", phone: "9711478718" },
