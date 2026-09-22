@@ -59,11 +59,8 @@ const USERS = [
   // Under Abhishek Kumar cluster
   { id: "e-vikas", name: "Vikas", username: "vikas", password: "Vikas@123", role: "employee", designation: "supervisor", supervisorId: "m-abhishek-g", location: "All centres", employeeCode: "OWEMP-0008" },
   { id: "e-dileep", name: "Dileep Kumar Prajapat", username: "dileep", password: "Dileep@123", role: "employee", designation: "facility-manager-tech", supervisorId: "m-abhishek-g", location: "All centres", employeeCode: "OWEMP-0028" },
-  { id: "e-shiva", name: "Shiva Bhati", username: "shiva", password: "Shiva@123", role: "employee", designation: "sr-facility-executive", supervisorId: "m-abhishek-g", location: "All centres" },
 
   // Under Kamal Khanna
-  { id: "e-priyanka-k", name: "Priyanka Kashyap", username: "priyanka.k", password: "Priyanka@123", role: "employee", designation: "front-desk-admin", supervisorId: "e5", location: "Noida Sector 126", employeeCode: "OWEMP-0025" },
-  { id: "e-shyam", name: "Shyam Sundar", username: "shyam", password: "Shyam@123", role: "employee", designation: "helpdesk-executive", supervisorId: "e5", location: "Noida Sector 126", employeeCode: "OWEMP-0026" },
 
   // Under Kartik Sharma
   { id: "e-arun", name: "Arun Bhardwaj", username: "arun", password: "Arun@123", role: "employee", designation: "supervisor", supervisorId: "e12", location: "Mohan Cooperative" },
