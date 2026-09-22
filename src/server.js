@@ -54,6 +54,14 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use(async (err, req, res, next) => {
+  if (err.message === 'Request aborted' || err.code === 'ECONNABORTED' || err.code === 'ECONNRESET') {
+    console.warn(`[UPLOAD] Request aborted by client: ${req.method} ${req.path}`);
+    if (!res.headersSent) {
+      return res.status(400).json({ error: "Upload was cancelled or connection interrupted." });
+    }
+    return;
+  }
+
   console.error(err.stack);
 
   const errorId = `err-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
