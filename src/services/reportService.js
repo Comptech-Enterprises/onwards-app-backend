@@ -88,8 +88,9 @@ async function generateAndSendDailyReport(targetDate = todayKey(), customRecipie
     }
 
     const groupStats = Object.entries(groups).map(([loc, emps]) => {
+      const team = (cm.location === loc) ? Array.from(new Set([cm, ...emps])) : emps;
       const doneTaskIds = new Set();
-      emps.forEach((emp) => {
+      team.forEach((emp) => {
         Object.keys(compMap[emp.id] || {}).forEach((t) => doneTaskIds.add(t));
       });
       const done = doneTaskIds.size;

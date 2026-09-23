@@ -23,7 +23,13 @@ async function getPeerUserIds(userId) {
     }));
     if (!peers || peers.length === 0) return [userId];
     const ids = peers
-      .filter((p) => p.designation === user.designation || (user.supervisor_id && p.supervisor_id === user.supervisor_id))
+      .filter((p) => {
+        if (p.id === user.id) return true;
+        if (user.supervisor_id && p.supervisor_id === user.supervisor_id) return true;
+        if (p.supervisor_id === user.id || user.supervisor_id === p.id) return true;
+        if (p.location === user.location) return true;
+        return false;
+      })
       .map((p) => p.id);
     return ids.length ? Array.from(new Set([userId, ...ids])) : [userId];
   } catch (err) {
