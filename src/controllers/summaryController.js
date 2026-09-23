@@ -40,13 +40,13 @@ async function getDailySummary(req, res) {
 
   const rows = [];
   for (const emp of employees) {
-    const { Items: tasks } = await docClient.send(new QueryCommand({
+    const taskResult = await docClient.send(new QueryCommand({
       TableName: Tables.USER_TASKS,
       KeyConditionExpression: "userId = :uid",
       ExpressionAttributeValues: { ":uid": emp.id },
       Select: "COUNT",
     }));
-    const total = tasks?.Count ?? 0;
+    const total = taskResult?.Count ?? 0;
     const done = doneMap[emp.id] || 0;
     const pct = total ? Math.round((done / total) * 100) : 0;
     rows.push({
