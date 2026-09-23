@@ -16,6 +16,8 @@ const alertRoutes = require("./routes/alerts");
 const summaryRoutes = require("./routes/summary");
 const errorLogRoutes = require("./routes/errorLogs");
 const configRoutes = require("./routes/config");
+const reportsRoutes = require("./routes/reports");
+const { initSchedulers } = require("./jobs/scheduler");
 
 const { PutCommand } = require("@aws-sdk/lib-dynamodb");
 const { docClient, Tables } = require("./config/db");
@@ -27,6 +29,7 @@ const { initWebSocket } = require("./ws");
 const app = express();
 const server = http.createServer(app);
 initWebSocket(server);
+initSchedulers();
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
@@ -46,6 +49,7 @@ app.use("/api/visitors", visitorRoutes);
 app.use("/api/photos", photoRoutes);
 app.use("/api/alerts", alertRoutes);
 app.use("/api/summary", summaryRoutes);
+app.use("/api/reports", reportsRoutes);
 app.use("/api/error-logs", errorLogRoutes);
 app.use("/api/config", configRoutes);
 
