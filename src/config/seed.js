@@ -46,6 +46,7 @@ const USERS = [
   { id: "e3", name: "Amit Kumar", username: "amit", password: "Amit@123", role: "employee", designation: "supervisor", supervisorId: "e2", location: "Okhla Phase 3", employeeCode: "OWEMP-0016", phone: "9210905185" },
 
   // Facility Supervisors — under Abhishek Dalal
+  { id: "e-satendra", name: "Satendra Singh", username: "satendra", password: "Satendra@123", role: "employee", designation: "supervisor", supervisorId: "e6", location: "Udyog Vihar Phase 4", employeeCode: "OWEMP-0041", phone: "8506912081", email: "sschauhan664@gmail.com" },
   { id: "e8", name: "Sameer Kumar", username: "sameer", password: "Sameer@123", role: "employee", designation: "supervisor", supervisorId: "e6", location: "Emaar Capital", employeeCode: "OWEMP-0021", phone: "7042933051" },
 
   // Facility Supervisors — under Anubhav
@@ -53,7 +54,7 @@ const USERS = [
   { id: "e13", name: "Akash Kumar", username: "akash", password: "Akash@123", role: "employee", designation: "supervisor", supervisorId: "e1", location: "E-44/3, Pocket D, Okhla Phase II", employeeCode: "OWEMP-0040", phone: "9953313194" },
 
   // Facility Supervisors — under Akanksha Mohanty
-  { id: "e11", name: "Mohammad Sameer", username: "sameer.ece", password: "Sameer@123", role: "employee", designation: "supervisor", supervisorId: "e10", location: "ECE House, Connaught Place", employeeCode: "OWEMP-0033", phone: "9711478718" },
+  { id: "e11", name: "Mohammad Sameer", username: "sameer.ece", password: "Sameer@123", role: "employee", designation: "supervisor", supervisorId: "e10", location: "Nuvama, Connaught Place", employeeCode: "OWEMP-0033", phone: "9711478718" },
   { id: "e-vivek", name: "Vivek Bhagwana", username: "vivek", password: "Vivek@123", role: "employee", designation: "supervisor", supervisorId: "e10", location: "ECE House, Connaught Place", phone: "8700124331" },
 
   // Under Abhishek Kumar cluster
@@ -61,6 +62,7 @@ const USERS = [
   { id: "e-dileep", name: "Dileep Kumar Prajapat", username: "dileep", password: "Dileep@123", role: "employee", designation: "facility-manager-tech", supervisorId: "m-abhishek-g", location: "All centres", employeeCode: "OWEMP-0028" },
 
   // Under Kamal Khanna
+  { id: "e-deepak", name: "Deepak", username: "deepak.126", password: "Deepak@123", role: "employee", designation: "supervisor", supervisorId: "e5", location: "Noida Sector 126", employeeCode: "OWEMP-0042", phone: "9582236165" },
 
   // Under Kartik Sharma
   { id: "e-arun", name: "Arun Bhardwaj", username: "arun", password: "Arun@123", role: "employee", designation: "supervisor", supervisorId: "e12", location: "Mohan Cooperative" },
