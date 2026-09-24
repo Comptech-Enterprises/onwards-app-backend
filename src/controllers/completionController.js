@@ -12,26 +12,43 @@ async function getPeerUserIds(userId) {
       TableName: Tables.USERS,
       Key: { id: userId },
     }));
-    if (!user || !user.location || user.location === "All centres") {
-      return [userId];
-    }
+    if (!user) return [userId];
+
     const { Items: peers } = await docClient.send(new ScanCommand({
       TableName: Tables.USERS,
-      FilterExpression: "#loc = :loc AND #r = :role",
-      ExpressionAttributeNames: { "#loc": "location", "#r": "role" },
-      ExpressionAttributeValues: { ":loc": user.location, ":role": "employee" },
     }));
-    if (!peers || peers.length === 0) return [userId];
-    const ids = peers
-      .filter((p) => {
-        if (p.id === user.id) return true;
-        if (user.supervisor_id && p.supervisor_id === user.supervisor_id) return true;
-        if (p.supervisor_id === user.id || user.supervisor_id === p.id) return true;
-        if (p.location === user.location) return true;
-        return false;
-      })
-      .map((p) => p.id);
-    return ids.length ? Array.from(new Set([userId, ...ids])) : [userId];
+    const emps = (peers || []).filter(p => p.role === "employee");
+
+    const isCM = user.designation === "cm";
+    let team = [user];
+
+    if (isCM) {
+      const mySupervisors = emps.filter(
+        (e) => e.supervisor_id === user.id || (user.location && user.location !== "All centres" && e.location === user.location)
+      );
+      team = [user, ...mySupervisors];
+    } else if (user.supervisor_id) {
+      const myCM = emps.find(
+        (e) => e.id === user.supervisor_id || (e.designation === "cm" && e.location === user.location)
+      );
+      const coSupervisors = emps.filter(
+        (e) => (user.location && user.location !== "All centres" && e.location === user.location) || (user.supervisor_id && e.supervisor_id === user.supervisor_id)
+      );
+      team = [user, ...(myCM ? [myCM] : []), ...coSupervisors];
+    } else if (user.location && user.location !== "All centres") {
+      team = emps.filter((e) => e.location === user.location);
+      if (!team.some((e) => e.id === user.id)) team = [user, ...team];
+    }
+
+    const seen = new Set();
+    const result = [];
+    for (const e of team) {
+      if (!seen.has(e.id)) {
+        seen.add(e.id);
+        result.push(e.id);
+      }
+    }
+    return result.length ? result : [userId];
   } catch (err) {
     console.error("Error getting peer user IDs:", err);
     return [userId];

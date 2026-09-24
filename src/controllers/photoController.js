@@ -1,6 +1,7 @@
 const { ScanCommand, QueryCommand, GetCommand, PutCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
 const { docClient, Tables } = require("../config/db");
 const { uploadToR2, deleteFromR2 } = require("../config/r2");
+const { broadcast } = require("../ws");
 
 const PHOTO_LIMITS = {
   Pantry: { min: 1, max: 4 },
@@ -94,6 +95,8 @@ async function uploadPhoto(req, res) {
     },
   }));
 
+  broadcast("photo_upload", { userId, category, photo_url: photoUrl, periodKey });
+
   res.status(201).json({ ok: true, id, url: photoUrl });
 }
 
@@ -140,6 +143,8 @@ async function deletePhoto(req, res) {
     TableName: Tables.CHECKLIST_PHOTOS,
     Key: { id: photoId },
   }));
+
+  broadcast("photo_delete", { userId, category: photo.category, photo_url: photo.photo_url, periodKey });
 
   res.json({ ok: true });
 }
