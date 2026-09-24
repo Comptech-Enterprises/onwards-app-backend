@@ -91,7 +91,7 @@ async function generateAndSendDailyReport(targetDate = todayKey(), customRecipie
     }
 
     const groupStats = Object.entries(groups).map(([loc, emps]) => {
-      const team = Array.from(new Set([cm, ...emps]));
+      const team = emps.length > 0 ? emps : [cm];
       const doneTaskIds = new Set();
       team.forEach((emp) => {
         Object.keys(compMap[emp.id] || {}).forEach((t) => doneTaskIds.add(t));
@@ -102,10 +102,9 @@ async function generateAndSendDailyReport(targetDate = todayKey(), customRecipie
       return { loc, emps: emps.length > 0 ? emps.map((e) => e.name).join(", ") : cm.name, done, total, pct };
     });
 
-    const totalDone = groupStats.reduce((sum, g) => sum + g.done, 0);
-    const totalTasks = groupStats.reduce((sum, g) => sum + g.total, 0);
-    const avgScore = totalTasks > 0
-      ? Math.round((totalDone / totalTasks) * 100)
+    const totalGroupPct = groupStats.reduce((sum, g) => sum + g.pct, 0);
+    const avgScore = groupStats.length > 0
+      ? Math.round(totalGroupPct / groupStats.length)
       : 0;
 
     return {
