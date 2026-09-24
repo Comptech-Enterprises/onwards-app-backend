@@ -85,10 +85,13 @@ async function generateAndSendDailyReport(targetDate = todayKey(), customRecipie
         if (!groups[loc]) groups[loc] = [];
         groups[loc].push(s);
       });
+      if (cm.location && cm.location !== "All centres" && !groups[cm.location]) {
+        groups[cm.location] = [];
+      }
     }
 
     const groupStats = Object.entries(groups).map(([loc, emps]) => {
-      const team = (cm.location === loc) ? Array.from(new Set([cm, ...emps])) : emps;
+      const team = Array.from(new Set([cm, ...emps]));
       const doneTaskIds = new Set();
       team.forEach((emp) => {
         Object.keys(compMap[emp.id] || {}).forEach((t) => doneTaskIds.add(t));
@@ -96,17 +99,21 @@ async function generateAndSendDailyReport(targetDate = todayKey(), customRecipie
       const done = doneTaskIds.size;
       const total = 97;
       const pct = Math.round((done / total) * 100);
-      return { loc, emps: emps.map((e) => e.name).join(", "), done, total, pct };
+      return { loc, emps: emps.length > 0 ? emps.map((e) => e.name).join(", ") : cm.name, done, total, pct };
     });
 
-    const avgScore = groupStats.length > 0
-      ? Math.round(groupStats.reduce((sum, g) => sum + g.pct, 0) / groupStats.length)
+    const totalDone = groupStats.reduce((sum, g) => sum + g.done, 0);
+    const totalTasks = groupStats.reduce((sum, g) => sum + g.total, 0);
+    const avgScore = totalTasks > 0
+      ? Math.round((totalDone / totalTasks) * 100)
       : 0;
 
     return {
       cm,
       groups: groupStats,
       avgScore,
+      totalDone,
+      totalTasks,
     };
   });
 
