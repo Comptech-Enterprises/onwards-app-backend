@@ -21,43 +21,25 @@ async function getPeerUserIds(userId, location = null) {
 
     const isCM = user.designation === "cm";
     const loc = location || (user.location !== "All centres" ? user.location : null);
-    let team = [user];
 
     if (isCM) {
-      if (loc) {
+      if (loc && loc !== "All centres") {
         const centreSupervisors = emps.filter(
-          (e) => e.location === loc && (e.supervisor_id === user.id || e.id === user.id)
+          (e) => e.location === loc && e.designation !== "cm"
         );
-        team = [user, ...centreSupervisors];
-      } else {
-        const mySupervisors = emps.filter(
-          (e) => e.supervisor_id === user.id || (user.location && user.location !== "All centres" && e.location === user.location)
-        );
-        team = [user, ...mySupervisors];
+        return centreSupervisors.length > 0 ? centreSupervisors.map(e => e.id) : [userId];
       }
-    } else if (user.supervisor_id) {
-      const myLoc = loc || user.location;
-      const myCM = emps.find(
-        (e) => e.id === user.supervisor_id || (e.designation === "cm" && (e.location === myLoc || emps.some(s => s.supervisor_id === e.id && s.location === myLoc)))
-      );
-      const coSupervisors = emps.filter(
-        (e) => myLoc && myLoc !== "All centres" && e.location === myLoc && (e.id === user.id || (user.supervisor_id && e.supervisor_id === user.supervisor_id))
-      );
-      team = [user, ...(myCM ? [myCM] : []), ...coSupervisors];
-    } else if (loc && loc !== "All centres") {
-      team = emps.filter((e) => e.location === loc);
-      if (!team.some((e) => e.id === user.id)) team = [user, ...team];
+      return [userId];
     }
 
-    const seen = new Set();
-    const result = [];
-    for (const e of team) {
-      if (!seen.has(e.id)) {
-        seen.add(e.id);
-        result.push(e.id);
-      }
+    if (loc && loc !== "All centres") {
+      const exactLocPeers = emps
+        .filter(p => p.location === loc && p.designation !== "cm")
+        .map(p => p.id);
+      return exactLocPeers.length > 0 ? exactLocPeers : [userId];
     }
-    return result.length ? result : [userId];
+
+    return [userId];
   } catch (err) {
     console.error("Error getting peer user IDs:", err);
     return [userId];
