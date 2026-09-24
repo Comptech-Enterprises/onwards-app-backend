@@ -6,7 +6,7 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-async function getPeerUserIds(userId) {
+async function getPeerUserIds(userId, location = null) {
   try {
     const { Item: user } = await docClient.send(new GetCommand({
       TableName: Tables.USERS,
@@ -20,23 +20,32 @@ async function getPeerUserIds(userId) {
     const emps = (peers || []).filter(p => p.role === "employee");
 
     const isCM = user.designation === "cm";
+    const loc = location || (user.location !== "All centres" ? user.location : null);
     let team = [user];
 
     if (isCM) {
-      const mySupervisors = emps.filter(
-        (e) => e.supervisor_id === user.id || (user.location && user.location !== "All centres" && e.location === user.location)
-      );
-      team = [user, ...mySupervisors];
+      if (loc) {
+        const centreSupervisors = emps.filter(
+          (e) => e.location === loc && (e.supervisor_id === user.id || e.id === user.id)
+        );
+        team = [user, ...centreSupervisors];
+      } else {
+        const mySupervisors = emps.filter(
+          (e) => e.supervisor_id === user.id || (user.location && user.location !== "All centres" && e.location === user.location)
+        );
+        team = [user, ...mySupervisors];
+      }
     } else if (user.supervisor_id) {
+      const myLoc = loc || user.location;
       const myCM = emps.find(
-        (e) => e.id === user.supervisor_id || (e.designation === "cm" && e.location === user.location)
+        (e) => e.id === user.supervisor_id || (e.designation === "cm" && (e.location === myLoc || emps.some(s => s.supervisor_id === e.id && s.location === myLoc)))
       );
       const coSupervisors = emps.filter(
-        (e) => (user.location && user.location !== "All centres" && e.location === user.location) || (user.supervisor_id && e.supervisor_id === user.supervisor_id)
+        (e) => myLoc && myLoc !== "All centres" && e.location === myLoc && (e.id === user.id || (user.supervisor_id && e.supervisor_id === user.supervisor_id))
       );
       team = [user, ...(myCM ? [myCM] : []), ...coSupervisors];
-    } else if (user.location && user.location !== "All centres") {
-      team = emps.filter((e) => e.location === user.location);
+    } else if (loc && loc !== "All centres") {
+      team = emps.filter((e) => e.location === loc);
       if (!team.some((e) => e.id === user.id)) team = [user, ...team];
     }
 
@@ -94,6 +103,7 @@ async function getAllCompletions(req, res) {
 async function toggleTask(req, res) {
   const { taskId } = req.params;
   const forUserId = req.body?.forUserId;
+  const location = req.body?.location;
   let userId = req.user.id;
 
   if (forUserId && forUserId !== userId) {
@@ -112,7 +122,7 @@ async function toggleTask(req, res) {
 
   const periodKey = todayKey();
   const sortKey = `${taskId}#${periodKey}`;
-  const targetUserIds = await getPeerUserIds(userId);
+  const targetUserIds = await getPeerUserIds(userId, location);
 
   const { Item: existing } = await docClient.send(new GetCommand({
     TableName: Tables.COMPLETIONS,
