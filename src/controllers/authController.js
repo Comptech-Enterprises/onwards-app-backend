@@ -1,7 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { QueryCommand, GetCommand } = require("@aws-sdk/lib-dynamodb");
-const { docClient, Tables } = require("../config/db");
+const { User } = require("../models");
 
 async function login(req, res) {
   const { username, password } = req.body;
@@ -9,18 +8,15 @@ async function login(req, res) {
     return res.status(400).json({ error: "Username and password required." });
   }
 
-  const { Items } = await docClient.send(new QueryCommand({
-    TableName: Tables.USERS,
-    IndexName: "username-index",
-    KeyConditionExpression: "username = :u",
-    ExpressionAttributeValues: { ":u": username.trim().toLowerCase() },
-  }));
+  const user = await User.findOne({
+    username: username.trim().toLowerCase(),
+    is_active: true,
+  });
 
-  if (!Items || Items.length === 0) {
+  if (!user) {
     return res.status(401).json({ error: "Invalid credentials." });
   }
 
-  const user = Items[0];
   const match = await bcrypt.compare(password, user.password);
   if (!match) {
     return res.status(401).json({ error: "Invalid credentials." });
@@ -50,26 +46,23 @@ async function login(req, res) {
 }
 
 async function me(req, res) {
-  const { Item } = await docClient.send(new GetCommand({
-    TableName: Tables.USERS,
-    Key: { id: req.user.id },
-  }));
+  const user = await User.findOne({ id: req.user.id });
 
-  if (!Item) {
+  if (!user) {
     return res.status(404).json({ error: "User not found." });
   }
 
   res.json({
-    id: Item.id,
-    name: Item.name,
-    username: Item.username,
-    role: Item.role,
-    location: Item.location,
-    employeeCode: Item.employee_code,
-    phone: Item.phone,
-    designation: Item.designation || null,
-    supervisorId: Item.supervisor_id || null,
-    managerId: Item.manager_id || null,
+    id: user.id,
+    name: user.name,
+    username: user.username,
+    role: user.role,
+    location: user.location,
+    employeeCode: user.employee_code,
+    phone: user.phone,
+    designation: user.designation || null,
+    supervisorId: user.supervisor_id || null,
+    managerId: user.manager_id || null,
   });
 }
 

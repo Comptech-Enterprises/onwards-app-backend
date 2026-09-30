@@ -4,6 +4,9 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 
+const { connectMongo } = require("./config/mongo");
+const { ErrorLog } = require("./models");
+
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
 const taskRoutes = require("./routes/tasks");
@@ -20,15 +23,22 @@ const configRoutes = require("./routes/config");
 const reportsRoutes = require("./routes/reports");
 const { initSchedulers } = require("./jobs/scheduler");
 
-const { PutCommand } = require("@aws-sdk/lib-dynamodb");
-const { docClient, Tables } = require("./config/db");
 const nodemailer = require("nodemailer");
-
 const http = require("http");
 const { initWebSocket } = require("./ws");
 
 const app = express();
 const server = http.createServer(app);
+
+// Connect to MongoDB
+connectMongo()
+  .then(() => {
+    console.log("[SERVER] Connected to MongoDB.");
+  })
+  .catch((err) => {
+    console.error("[SERVER] MongoDB Connection Failure:", err);
+  });
+
 initWebSocket(server);
 initSchedulers();
 
@@ -37,7 +47,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.get("/", (req, res) => {
-  res.send("Hello World — Onwards Workspaces API");
+  res.send("Hello World — Onwards Workspaces API (MongoDB)");
 });
 
 app.use("/api/auth", authRoutes);
@@ -56,7 +66,7 @@ app.use("/api/error-logs", errorLogRoutes);
 app.use("/api/config", configRoutes);
 
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({ status: "ok", db: "mongodb", timestamp: new Date().toISOString() });
 });
 
 app.use(async (err, req, res, next) => {
@@ -74,19 +84,16 @@ app.use(async (err, req, res, next) => {
   const timestamp = new Date().toISOString();
 
   try {
-    await docClient.send(new PutCommand({
-      TableName: Tables.ERROR_LOGS,
-      Item: {
-        id: errorId,
-        level: "error",
-        message: err.message || "Unknown error",
-        stack: err.stack || null,
-        endpoint: req.path || null,
-        method: req.method || null,
-        status_code: 500,
-        created_at: timestamp,
-      },
-    }));
+    await ErrorLog.create({
+      id: errorId,
+      level: "error",
+      message: err.message || "Unknown error",
+      stack: err.stack || null,
+      endpoint: req.path || null,
+      method: req.method || null,
+      status_code: 500,
+      created_at: timestamp,
+    });
   } catch (logErr) {
     console.error("Failed to write error log:", logErr.message);
   }

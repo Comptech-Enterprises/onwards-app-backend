@@ -1,5 +1,4 @@
-const { ScanCommand, QueryCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
-const { docClient, Tables } = require("../config/db");
+const { User, Completion, ChecklistPhoto, Visitor, Issue } = require("../models");
 const { deleteFromR2 } = require("../config/r2");
 const { sendMail, REPORT_RECIPIENTS } = require("./mailService");
 
@@ -55,26 +54,20 @@ function getFooterHtml() {
 // 1. DAILY REPORT (Ravi Pawar & Abhishek Gupta)
 // -------------------------------------------------------------
 async function generateAndSendDailyReport(targetDate = todayKey(), customRecipients = null) {
-  const { Items: users } = await docClient.send(new ScanCommand({ TableName: Tables.USERS }));
-  const employees = (users || []).filter((u) => u.role === "employee");
-  const cmList = employees.filter((u) => u.designation === "cm");
+  const users = await User.find({ role: "employee" });
+  const cmList = users.filter((u) => u.designation === "cm");
 
-  const { Items: completions } = await docClient.send(new QueryCommand({
-    TableName: Tables.COMPLETIONS,
-    IndexName: "periodKey-index",
-    KeyConditionExpression: "periodKey = :pk",
-    ExpressionAttributeValues: { ":pk": targetDate },
-  }));
+  const completions = await Completion.find({ periodKey: targetDate });
 
   const compMap = {};
-  for (const c of (completions || [])) {
+  for (const c of completions) {
     if (!compMap[c.userId]) compMap[c.userId] = {};
     compMap[c.userId][c.taskId] = c.completed_at;
   }
 
   // Calculate CM & Group Scores
   const cmReport = cmList.map((cm) => {
-    const supervisors = employees.filter((e) => e.supervisor_id === cm.id);
+    const supervisors = users.filter((e) => e.supervisor_id === cm.id);
     const groups = {};
 
     if (supervisors.length === 0) {
@@ -111,8 +104,6 @@ async function generateAndSendDailyReport(targetDate = todayKey(), customRecipie
       cm,
       groups: groupStats,
       avgScore,
-      totalDone,
-      totalTasks,
     };
   });
 
@@ -171,7 +162,7 @@ async function generateAndSendDailyReport(targetDate = todayKey(), customRecipie
         </div>
         <div style="flex: 1; background: #F7FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; text-align: center;">
           <div style="font-size: 11px; color: #718096; text-transform: uppercase; font-weight: 600;">Total Completions</div>
-          <div style="font-size: 22px; font-weight: 800; color: #2E7D32; margin-top: 4px;">${(completions || []).length}</div>
+          <div style="font-size: 22px; font-weight: 800; color: #2E7D32; margin-top: 4px;">${completions.length}</div>
         </div>
       </div>
 
@@ -205,30 +196,29 @@ async function generateAndSendDailyReport(targetDate = todayKey(), customRecipie
 // 2. WEEKLY REPORT (Mannat Jain & Vineeta Sanduja)
 // -------------------------------------------------------------
 async function generateAndSendWeeklyReport(startDate = todayKey(-7), endDate = todayKey(), customRecipients = null) {
-  const { Items: users } = await docClient.send(new ScanCommand({ TableName: Tables.USERS }));
-  const employees = (users || []).filter((u) => u.role === "employee");
-  const cmList = employees.filter((u) => u.designation === "cm");
+  const users = await User.find({ role: "employee" });
+  const cmList = users.filter((u) => u.designation === "cm");
 
-  const { Items: completions } = await docClient.send(new ScanCommand({
-    TableName: Tables.COMPLETIONS,
-    FilterExpression: "periodKey BETWEEN :start AND :end",
-    ExpressionAttributeValues: { ":start": startDate, ":end": endDate },
-  }));
+  const completions = await Completion.find({
+    periodKey: { $gte: startDate, $lte: endDate },
+  });
 
-  const { Items: issues } = await docClient.send(new ScanCommand({ TableName: Tables.ISSUES }));
-  const { Items: visitors } = await docClient.send(new ScanCommand({ TableName: Tables.VISITORS }));
+  const periodIssues = await Issue.find({
+    created_at: { $gte: startDate, $lte: `${endDate}T23:59:59` },
+  });
 
-  const periodIssues = (issues || []).filter((i) => i.createdAt >= startDate && i.createdAt <= `${endDate}T23:59:59`);
-  const periodVisitors = (visitors || []).filter((v) => v.date >= startDate && v.date <= endDate);
+  const periodVisitors = await Visitor.find({
+    visit_date: { $gte: startDate, $lte: endDate },
+  });
 
   const doneMap = {};
-  for (const c of (completions || [])) {
+  for (const c of completions) {
     doneMap[c.userId] = (doneMap[c.userId] || 0) + 1;
   }
 
   // Calculate 7-day average metrics
   const cmScores = cmList.map((cm) => {
-    const supervisors = employees.filter((e) => e.supervisor_id === cm.id);
+    const supervisors = users.filter((e) => e.supervisor_id === cm.id);
     const team = supervisors.length > 0 ? supervisors : [cm];
     const totalDone = team.reduce((sum, e) => sum + (doneMap[e.id] || 0), 0);
     const expected = team.length * 97 * 7;
@@ -309,32 +299,27 @@ async function generateAndSendMonthlyReport(year = new Date().getFullYear(), mon
   const monthStr = String(month).padStart(2, "0");
   const prefix = `${year}-${monthStr}`;
 
-  const { Items: users } = await docClient.send(new ScanCommand({ TableName: Tables.USERS }));
-  const employees = (users || []).filter((u) => u.role === "employee");
-  const cmList = employees.filter((u) => u.designation === "cm");
+  const users = await User.find({ role: "employee" });
+  const cmList = users.filter((u) => u.designation === "cm");
 
-  const { Items: completions } = await docClient.send(new ScanCommand({
-    TableName: Tables.COMPLETIONS,
-    FilterExpression: "begins_with(periodKey, :pref)",
-    ExpressionAttributeValues: { ":pref": prefix },
-  }));
+  const completions = await Completion.find({
+    periodKey: { $regex: new RegExp(`^${prefix}`) },
+  });
 
-  const { Items: photos } = await docClient.send(new ScanCommand({
-    TableName: Tables.CHECKLIST_PHOTOS,
-    FilterExpression: "begins_with(periodKey, :pref)",
-    ExpressionAttributeValues: { ":pref": prefix },
-  }));
+  const photos = await ChecklistPhoto.find({
+    periodKey: { $regex: new RegExp(`^${prefix}`) },
+  });
 
   const monthName = new Date(year, month - 1, 1).toLocaleString("default", { month: "long", year: "numeric" });
 
   const doneMap = {};
-  for (const c of (completions || [])) {
+  for (const c of completions) {
     doneMap[c.userId] = (doneMap[c.userId] || 0) + 1;
   }
 
   const daysInMonth = new Date(year, month, 0).getDate();
   const cmRows = cmList.map((cm) => {
-    const supervisors = employees.filter((e) => e.supervisor_id === cm.id);
+    const supervisors = users.filter((e) => e.supervisor_id === cm.id);
     const team = supervisors.length > 0 ? supervisors : [cm];
     const totalDone = team.reduce((sum, e) => sum + (doneMap[e.id] || 0), 0);
     const expected = team.length * 97 * daysInMonth;
@@ -373,11 +358,11 @@ async function generateAndSendMonthlyReport(year = new Date().getFullYear(), mon
         </div>
         <div style="flex: 1; background: #F7FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; text-align: center;">
           <div style="font-size: 11px; color: #718096; text-transform: uppercase; font-weight: 600;">Total Tasks Executed</div>
-          <div style="font-size: 22px; font-weight: 800; color: #2E7D32; margin-top: 4px;">${(completions || []).length}</div>
+          <div style="font-size: 22px; font-weight: 800; color: #2E7D32; margin-top: 4px;">${completions.length}</div>
         </div>
         <div style="flex: 1; background: #F7FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; text-align: center;">
           <div style="font-size: 11px; color: #718096; text-transform: uppercase; font-weight: 600;">Audit Photos Logged</div>
-          <div style="font-size: 22px; font-weight: 800; color: #2D3748; margin-top: 4px;">${(photos || []).length}</div>
+          <div style="font-size: 22px; font-weight: 800; color: #2D3748; margin-top: 4px;">${photos.length}</div>
         </div>
       </div>
 
@@ -434,32 +419,31 @@ async function generateAndSendQuarterlyReport(year = new Date().getFullYear(), q
   const months = quarterMonths[quarter] || quarterMonths[1];
   const quarterLabel = `Q${quarter} ${year} (${months[0]}/${year} - ${months[2]}/${year})`;
 
-  const { Items: users } = await docClient.send(new ScanCommand({ TableName: Tables.USERS }));
-  const employees = (users || []).filter((u) => u.role === "employee");
-  const cmList = employees.filter((u) => u.designation === "cm");
+  const users = await User.find({ role: "employee" });
+  const cmList = users.filter((u) => u.designation === "cm");
 
   const startPrefix = `${year}-${months[0]}-01`;
   const endPrefix = `${year}-${months[2]}-31`;
 
-  const { Items: completions } = await docClient.send(new ScanCommand({
-    TableName: Tables.COMPLETIONS,
-    FilterExpression: "periodKey BETWEEN :start AND :end",
-    ExpressionAttributeValues: { ":start": startPrefix, ":end": endPrefix },
-  }));
+  const completions = await Completion.find({
+    periodKey: { $gte: startPrefix, $lte: endPrefix },
+  });
 
-  const { Items: visitors } = await docClient.send(new ScanCommand({ TableName: Tables.VISITORS }));
-  const { Items: issues } = await docClient.send(new ScanCommand({ TableName: Tables.ISSUES }));
+  const qVisitors = await Visitor.find({
+    visit_date: { $gte: startPrefix, $lte: endPrefix },
+  });
 
-  const qVisitors = (visitors || []).filter((v) => v.date >= startPrefix && v.date <= endPrefix);
-  const qIssues = (issues || []).filter((i) => i.createdAt >= startPrefix && i.createdAt <= `${endPrefix}T23:59:59`);
+  const qIssues = await Issue.find({
+    created_at: { $gte: startPrefix, $lte: `${endPrefix}T23:59:59` },
+  });
 
   const doneMap = {};
-  for (const c of (completions || [])) {
+  for (const c of completions) {
     doneMap[c.userId] = (doneMap[c.userId] || 0) + 1;
   }
 
   const cmRows = cmList.map((cm) => {
-    const supervisors = employees.filter((e) => e.supervisor_id === cm.id);
+    const supervisors = users.filter((e) => e.supervisor_id === cm.id);
     const team = supervisors.length > 0 ? supervisors : [cm];
     const totalDone = team.reduce((sum, e) => sum + (doneMap[e.id] || 0), 0);
     const expected = team.length * 97 * 90;
@@ -554,17 +538,14 @@ async function generateAndSendQuarterlyReport(year = new Date().getFullYear(), q
 async function cleanupMonthlyImages(monthPrefix) {
   console.log(`[CLEANUP] Starting monthly image cleanup for prefix: ${monthPrefix}...`);
 
-  const { Items: photos } = await docClient.send(new ScanCommand({
-    TableName: Tables.CHECKLIST_PHOTOS,
-    FilterExpression: "begins_with(periodKey, :pref)",
-    ExpressionAttributeValues: { ":pref": monthPrefix },
-  }));
+  const photos = await ChecklistPhoto.find({
+    periodKey: { $regex: new RegExp(`^${monthPrefix}`) },
+  });
 
-  const items = photos || [];
   let deletedFromR2 = 0;
   let deletedRecords = 0;
 
-  for (const p of items) {
+  for (const p of photos) {
     if (p.photo_url) {
       try {
         await deleteFromR2(p.photo_url);
@@ -573,10 +554,7 @@ async function cleanupMonthlyImages(monthPrefix) {
         console.warn(`[CLEANUP] Could not delete R2 photo ${p.photo_url}:`, err.message);
       }
     }
-    await docClient.send(new DeleteCommand({
-      TableName: Tables.CHECKLIST_PHOTOS,
-      Key: { id: p.id },
-    }));
+    await ChecklistPhoto.deleteOne({ id: p.id });
     deletedRecords++;
   }
 
@@ -588,23 +566,11 @@ async function cleanupMonthlyImages(monthPrefix) {
 async function cleanupQuarterlyData(cutoffDateStr = todayKey(-90)) {
   console.log(`[CLEANUP] Starting 90-day quarterly data cleanup for records older than: ${cutoffDateStr}...`);
 
-  const { Items: oldCompletions } = await docClient.send(new ScanCommand({
-    TableName: Tables.COMPLETIONS,
-    FilterExpression: "periodKey < :cutoff",
-    ExpressionAttributeValues: { ":cutoff": cutoffDateStr },
-  }));
+  const result = await Completion.deleteMany({
+    periodKey: { $lt: cutoffDateStr },
+  });
 
-  const items = oldCompletions || [];
-  let deleted = 0;
-
-  for (const c of items) {
-    await docClient.send(new DeleteCommand({
-      TableName: Tables.COMPLETIONS,
-      Key: { userId: c.userId, taskId_periodKey: c.taskId_periodKey },
-    }));
-    deleted++;
-  }
-
+  const deleted = result.deletedCount || 0;
   console.log(`[CLEANUP] Quarterly Data Cleanup Finished: ${deleted} old completion records purged.`);
   return { deleted };
 }

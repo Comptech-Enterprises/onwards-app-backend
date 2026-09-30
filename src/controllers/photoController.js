@@ -1,5 +1,4 @@
-const { ScanCommand, QueryCommand, GetCommand, PutCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
-const { docClient, Tables } = require("../config/db");
+const { ChecklistPhoto, Completion, Task } = require("../models");
 const { uploadToR2, deleteFromR2 } = require("../config/r2");
 const { broadcast } = require("../ws");
 
@@ -19,15 +18,10 @@ async function getPhotos(req, res) {
   const periodKey = req.query.date || todayKey();
   const userPeriod = `${userId}#${periodKey}`;
 
-  const { Items } = await docClient.send(new QueryCommand({
-    TableName: Tables.CHECKLIST_PHOTOS,
-    IndexName: "userPeriod-index",
-    KeyConditionExpression: "userPeriod = :up",
-    ExpressionAttributeValues: { ":up": userPeriod },
-  }));
+  const items = await ChecklistPhoto.find({ userPeriod });
 
   const photos = {};
-  for (const row of (Items || [])) {
+  for (const row of items) {
     if (!photos[row.category]) photos[row.category] = [];
     photos[row.category].push(row.photo_url);
   }
@@ -37,15 +31,10 @@ async function getPhotos(req, res) {
 async function getAllPhotos(req, res) {
   const periodKey = req.query.date || todayKey();
 
-  const { Items } = await docClient.send(new QueryCommand({
-    TableName: Tables.CHECKLIST_PHOTOS,
-    IndexName: "periodKey-index",
-    KeyConditionExpression: "periodKey = :pk",
-    ExpressionAttributeValues: { ":pk": periodKey },
-  }));
+  const items = await ChecklistPhoto.find({ periodKey });
 
   const photos = {};
-  for (const row of (Items || [])) {
+  for (const row of items) {
     if (!photos[row.userId]) photos[row.userId] = {};
     if (!photos[row.userId][row.category]) photos[row.userId][row.category] = [];
     photos[row.userId][row.category].push(row.photo_url);
@@ -68,32 +57,24 @@ async function uploadPhoto(req, res) {
   }
 
   const userPeriod = `${userId}#${periodKey}`;
-  const { Items: existing } = await docClient.send(new QueryCommand({
-    TableName: Tables.CHECKLIST_PHOTOS,
-    IndexName: "userPeriod-index",
-    KeyConditionExpression: "userPeriod = :up AND category = :cat",
-    ExpressionAttributeValues: { ":up": userPeriod, ":cat": category },
-  }));
+  const count = await ChecklistPhoto.countDocuments({ userPeriod, category });
 
-  if ((existing || []).length >= limits.max) {
+  if (count >= limits.max) {
     return res.status(400).json({ error: `Up to ${limits.max} ${category} photos.` });
   }
 
   const photoUrl = await uploadToR2(req.file.buffer, req.file.originalname, req.file.mimetype);
   const id = `p-${Date.now()}`;
 
-  await docClient.send(new PutCommand({
-    TableName: Tables.CHECKLIST_PHOTOS,
-    Item: {
-      id,
-      userId,
-      userPeriod,
-      category,
-      photo_url: photoUrl,
-      uploaded_at: new Date().toISOString(),
-      periodKey,
-    },
-  }));
+  await ChecklistPhoto.create({
+    id,
+    userId,
+    userPeriod,
+    category,
+    photo_url: photoUrl,
+    uploaded_at: new Date().toISOString(),
+    periodKey,
+  });
 
   broadcast("photo_upload", { userId, category, photo_url: photoUrl, periodKey });
 
@@ -104,45 +85,26 @@ async function deletePhoto(req, res) {
   const { photoId } = req.params;
   const userId = req.user.id;
 
-  const { Item: photo } = await docClient.send(new GetCommand({
-    TableName: Tables.CHECKLIST_PHOTOS,
-    Key: { id: photoId },
-  }));
+  const photo = await ChecklistPhoto.findOne({ id: photoId });
 
   if (!photo || photo.userId !== userId) {
     return res.status(404).json({ error: "Photo not found." });
   }
 
   const periodKey = todayKey();
-  const { Items: completions } = await docClient.send(new QueryCommand({
-    TableName: Tables.COMPLETIONS,
-    KeyConditionExpression: "userId = :uid",
-    ExpressionAttributeValues: { ":uid": userId },
-    FilterExpression: "periodKey = :pk",
-  }));
+  const completions = await Completion.find({ userId, periodKey });
 
-  const { Items: categoryTasks } = await docClient.send(new QueryCommand({
-    TableName: Tables.TASKS,
-    IndexName: "category-index",
-    KeyConditionExpression: "category = :cat",
-    ExpressionAttributeValues: { ":cat": photo.category },
-  }));
-  const categoryTaskIds = new Set((categoryTasks || []).map((t) => t.id));
+  const categoryTasks = await Task.find({ category: photo.category });
+  const categoryTaskIds = new Set(categoryTasks.map((t) => t.id));
 
-  const ticked = (completions || []).filter(
-    (c) => c.periodKey === periodKey && categoryTaskIds.has(c.taskId)
-  );
+  const ticked = completions.filter((c) => categoryTaskIds.has(c.taskId));
 
   if (ticked.length > 0) {
     return res.status(400).json({ error: "Photos cannot be removed after a task is ticked." });
   }
 
   await deleteFromR2(photo.photo_url);
-
-  await docClient.send(new DeleteCommand({
-    TableName: Tables.CHECKLIST_PHOTOS,
-    Key: { id: photoId },
-  }));
+  await ChecklistPhoto.deleteOne({ id: photoId });
 
   broadcast("photo_delete", { userId, category: photo.category, photo_url: photo.photo_url, periodKey });
 
@@ -158,20 +120,11 @@ async function clearPhotos(req, res) {
   }
 
   const userPeriod = `${userId}#${periodKey}`;
-  const { Items } = await docClient.send(new QueryCommand({
-    TableName: Tables.CHECKLIST_PHOTOS,
-    IndexName: "userPeriod-index",
-    KeyConditionExpression: "userPeriod = :up",
-    ExpressionAttributeValues: { ":up": userPeriod },
-  }));
+  const items = await ChecklistPhoto.find({ userPeriod });
 
-  const items = Items || [];
   for (const row of items) {
     await deleteFromR2(row.photo_url);
-    await docClient.send(new DeleteCommand({
-      TableName: Tables.CHECKLIST_PHOTOS,
-      Key: { id: row.id },
-    }));
+    await ChecklistPhoto.deleteOne({ id: row.id });
   }
 
   res.json({ ok: true, deleted: items.length });

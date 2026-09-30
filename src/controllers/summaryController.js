@@ -1,6 +1,5 @@
 const nodemailer = require("nodemailer");
-const { ScanCommand, QueryCommand } = require("@aws-sdk/lib-dynamodb");
-const { docClient, Tables } = require("../config/db");
+const { User, Completion, UserTask } = require("../models");
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -17,36 +16,17 @@ function escapeHtml(value) {
 async function getDailySummary(req, res) {
   const date = req.query.date || todayKey();
 
-  const { Items: allUsers } = await docClient.send(new ScanCommand({
-    TableName: Tables.USERS,
-    FilterExpression: "#r = :role",
-    ExpressionAttributeNames: { "#r": "role" },
-    ExpressionAttributeValues: { ":role": "employee" },
-  }));
-
-  const employees = (allUsers || []).sort((a, b) => a.name.localeCompare(b.name));
-
-  const { Items: completions } = await docClient.send(new QueryCommand({
-    TableName: Tables.COMPLETIONS,
-    IndexName: "periodKey-index",
-    KeyConditionExpression: "periodKey = :pk",
-    ExpressionAttributeValues: { ":pk": date },
-  }));
+  const employees = await User.find({ role: "employee" }).sort({ name: 1 });
+  const completions = await Completion.find({ periodKey: date });
 
   const doneMap = {};
-  for (const row of (completions || [])) {
+  for (const row of completions) {
     doneMap[row.userId] = (doneMap[row.userId] || 0) + 1;
   }
 
   const rows = [];
   for (const emp of employees) {
-    const taskResult = await docClient.send(new QueryCommand({
-      TableName: Tables.USER_TASKS,
-      KeyConditionExpression: "userId = :uid",
-      ExpressionAttributeValues: { ":uid": emp.id },
-      Select: "COUNT",
-    }));
-    const total = taskResult?.Count ?? 0;
+    const total = await UserTask.countDocuments({ userId: emp.id });
     const done = doneMap[emp.id] || 0;
     const pct = total ? Math.round((done / total) * 100) : 0;
     rows.push({

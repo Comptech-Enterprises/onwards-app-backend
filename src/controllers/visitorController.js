@@ -1,5 +1,4 @@
-const { ScanCommand, GetCommand, PutCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
-const { docClient, Tables } = require("../config/db");
+const { Visitor, User } = require("../models");
 
 const VISITOR_DELETE_WINDOW_MS = 3 * 60 * 60 * 1000;
 
@@ -18,9 +17,8 @@ const VAS_AGGREGATORS = [
 ];
 
 async function listVisitors(req, res) {
-  const { Items } = await docClient.send(new ScanCommand({ TableName: Tables.VISITORS }));
-  const sorted = (Items || []).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
-  res.json(sorted.map(formatVisitor));
+  const items = await Visitor.find({}).sort({ created_at: -1 });
+  res.json(items.map(formatVisitor));
 }
 
 async function createVisitor(req, res) {
@@ -42,10 +40,7 @@ async function createVisitor(req, res) {
   } = req.body;
   const userId = req.user.id;
 
-  const { Item: emp } = await docClient.send(new GetCommand({
-    TableName: Tables.USERS,
-    Key: { id: userId },
-  }));
+  const emp = await User.findOne({ id: userId });
   const employeeName = emp?.name || "Unknown";
   const empLocation = location || emp?.location || "Unknown";
 
@@ -55,7 +50,7 @@ async function createVisitor(req, res) {
     : (paymentAmount != null ? parseFloat(paymentAmount) : 0);
 
   const id = `v-${Date.now()}`;
-  const item = {
+  const item = await Visitor.create({
     id,
     user_id: userId,
     employee_name: employeeName,
@@ -72,12 +67,7 @@ async function createVisitor(req, res) {
     amount_received: isNaN(parsedAmount) ? 0 : parsedAmount,
     invoice_tech_monk: invoiceTechMonk === true || invoiceTechMonk === "Yes" ? "Yes" : "No",
     created_at: new Date().toISOString(),
-  };
-
-  await docClient.send(new PutCommand({
-    TableName: Tables.VISITORS,
-    Item: item,
-  }));
+  });
 
   res.status(201).json(formatVisitor(item));
 }
@@ -85,25 +75,17 @@ async function createVisitor(req, res) {
 async function deleteVisitor(req, res) {
   const { visitorId } = req.params;
 
-  const { Item } = await docClient.send(new GetCommand({
-    TableName: Tables.VISITORS,
-    Key: { id: visitorId },
-  }));
-
-  if (!Item) {
+  const item = await Visitor.findOne({ id: visitorId });
+  if (!item) {
     return res.status(404).json({ error: "Entry not found." });
   }
 
-  const created = new Date(Item.created_at).getTime();
+  const created = new Date(item.created_at).getTime();
   if (Date.now() - created >= VISITOR_DELETE_WINDOW_MS) {
     return res.status(400).json({ error: "Entries can only be deleted within 3 hours of logging." });
   }
 
-  await docClient.send(new DeleteCommand({
-    TableName: Tables.VISITORS,
-    Key: { id: visitorId },
-  }));
-
+  await Visitor.deleteOne({ id: visitorId });
   res.json({ ok: true });
 }
 

@@ -1,5 +1,4 @@
-const { ScanCommand, QueryCommand, GetCommand, PutCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
-const { docClient, Tables } = require("../config/db");
+const { Completion, User } = require("../models");
 const { broadcast } = require("../ws");
 
 function todayKey() {
@@ -8,16 +7,10 @@ function todayKey() {
 
 async function getPeerUserIds(userId, location = null) {
   try {
-    const { Item: user } = await docClient.send(new GetCommand({
-      TableName: Tables.USERS,
-      Key: { id: userId },
-    }));
+    const user = await User.findOne({ id: userId });
     if (!user) return [userId];
 
-    const { Items: peers } = await docClient.send(new ScanCommand({
-      TableName: Tables.USERS,
-    }));
-    const emps = (peers || []).filter(p => p.role === "employee");
+    const emps = await User.find({ role: "employee" });
 
     const isCM = user.designation === "cm";
     const loc = location || (user.location !== "All centres" ? user.location : null);
@@ -50,15 +43,10 @@ async function getCompletions(req, res) {
   const userId = req.params.userId || req.user.id;
   const periodKey = req.query.date || todayKey();
 
-  const { Items } = await docClient.send(new QueryCommand({
-    TableName: Tables.COMPLETIONS,
-    IndexName: "periodKey-index",
-    KeyConditionExpression: "periodKey = :pk AND userId = :uid",
-    ExpressionAttributeValues: { ":pk": periodKey, ":uid": userId },
-  }));
+  const items = await Completion.find({ periodKey, userId });
 
   const completions = {};
-  for (const row of (Items || [])) {
+  for (const row of items) {
     completions[row.taskId] = row.completed_at;
   }
   res.json(completions);
@@ -67,15 +55,10 @@ async function getCompletions(req, res) {
 async function getAllCompletions(req, res) {
   const periodKey = req.query.date || todayKey();
 
-  const { Items } = await docClient.send(new QueryCommand({
-    TableName: Tables.COMPLETIONS,
-    IndexName: "periodKey-index",
-    KeyConditionExpression: "periodKey = :pk",
-    ExpressionAttributeValues: { ":pk": periodKey },
-  }));
+  const items = await Completion.find({ periodKey });
 
   const completions = {};
-  for (const row of (Items || [])) {
+  for (const row of items) {
     if (!completions[row.userId]) completions[row.userId] = {};
     completions[row.userId][row.taskId] = row.completed_at;
   }
@@ -89,13 +72,7 @@ async function toggleTask(req, res) {
   let userId = req.user.id;
 
   if (forUserId && forUserId !== userId) {
-    const { Items } = await docClient.send(new QueryCommand({
-      TableName: Tables.USERS,
-      IndexName: "username-index",
-      KeyConditionExpression: "username = :u",
-      ExpressionAttributeValues: { ":u": req.user.username },
-    }));
-    const caller = Items?.[0];
+    const caller = await User.findOne({ username: req.user.username });
     if (!caller || (caller.designation !== "cm" && caller.role !== "manager")) {
       return res.status(403).json({ error: "Not authorized to tick for another user." });
     }
@@ -106,17 +83,17 @@ async function toggleTask(req, res) {
   const sortKey = `${taskId}#${periodKey}`;
   const targetUserIds = await getPeerUserIds(userId, location);
 
-  const { Item: existing } = await docClient.send(new GetCommand({
-    TableName: Tables.COMPLETIONS,
-    Key: { userId, taskId_periodKey: sortKey },
-  }));
+  const existing = await Completion.findOne({
+    userId,
+    taskId_periodKey: sortKey,
+  });
 
   if (existing) {
     for (const uid of targetUserIds) {
-      await docClient.send(new DeleteCommand({
-        TableName: Tables.COMPLETIONS,
-        Key: { userId: uid, taskId_periodKey: sortKey },
-      }));
+      await Completion.deleteOne({
+        userId: uid,
+        taskId_periodKey: sortKey,
+      });
       broadcast("completion", { userId: uid, taskId, status: "unchecked", periodKey });
     }
     return res.json({ ok: true, status: "unchecked" });
@@ -124,16 +101,17 @@ async function toggleTask(req, res) {
 
   const completed_at = new Date().toISOString();
   for (const uid of targetUserIds) {
-    await docClient.send(new PutCommand({
-      TableName: Tables.COMPLETIONS,
-      Item: {
+    await Completion.findOneAndUpdate(
+      { userId: uid, taskId_periodKey: sortKey },
+      {
         userId: uid,
         taskId_periodKey: sortKey,
         taskId,
         periodKey,
         completed_at,
       },
-    }));
+      { upsert: true, returnDocument: 'after' }
+    );
     broadcast("completion", { userId: uid, taskId, status: "checked", periodKey, completed_at });
   }
 
@@ -152,21 +130,8 @@ async function clearCompletions(req, res) {
   let totalDeleted = 0;
 
   for (const uid of targetUserIds) {
-    const { Items } = await docClient.send(new QueryCommand({
-      TableName: Tables.COMPLETIONS,
-      IndexName: "periodKey-index",
-      KeyConditionExpression: "periodKey = :pk AND userId = :uid",
-      ExpressionAttributeValues: { ":pk": periodKey, ":uid": uid },
-    }));
-
-    const items = Items || [];
-    for (const row of items) {
-      await docClient.send(new DeleteCommand({
-        TableName: Tables.COMPLETIONS,
-        Key: { userId: row.userId, taskId_periodKey: row.taskId_periodKey },
-      }));
-    }
-    totalDeleted += items.length;
+    const result = await Completion.deleteMany({ periodKey, userId: uid });
+    totalDeleted += result.deletedCount || 0;
   }
 
   res.json({ ok: true, deleted: totalDeleted });

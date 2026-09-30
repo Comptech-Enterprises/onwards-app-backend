@@ -1,5 +1,4 @@
-const { QueryCommand, GetCommand, PutCommand } = require("@aws-sdk/lib-dynamodb");
-const { docClient, Tables } = require("../config/db");
+const { ReviewCheck } = require("../models");
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -8,14 +7,10 @@ function todayKey() {
 async function getReviewChecks(req, res) {
   const periodKey = req.query.date || todayKey();
 
-  const { Items } = await docClient.send(new QueryCommand({
-    TableName: Tables.REVIEW_CHECKS,
-    KeyConditionExpression: "periodKey = :pk",
-    ExpressionAttributeValues: { ":pk": periodKey },
-  }));
+  const items = await ReviewCheck.find({ periodKey });
 
   const checks = {};
-  for (const row of (Items || [])) {
+  for (const row of items) {
     if (!checks[row.category]) checks[row.category] = {};
     if (!checks[row.category][row.location]) checks[row.category][row.location] = {};
     checks[row.category][row.location][row.taskId] = row.checked_at;
@@ -33,27 +28,24 @@ async function checkReviewTask(req, res) {
     return res.status(400).json({ error: "Category, location, and task ID required." });
   }
 
-  const { Item: existing } = await docClient.send(new GetCommand({
-    TableName: Tables.REVIEW_CHECKS,
-    Key: { periodKey, cat_loc_task: sortKey },
-  }));
+  const existing = await ReviewCheck.findOne({
+    periodKey,
+    cat_loc_task: sortKey,
+  });
 
   if (existing) {
     return res.status(400).json({ ok: false, error: "Ticked items cannot be unmarked." });
   }
 
-  await docClient.send(new PutCommand({
-    TableName: Tables.REVIEW_CHECKS,
-    Item: {
-      periodKey,
-      cat_loc_task: sortKey,
-      category,
-      location,
-      taskId,
-      checked_by: userId,
-      checked_at: new Date().toISOString(),
-    },
-  }));
+  await ReviewCheck.create({
+    periodKey,
+    cat_loc_task: sortKey,
+    category,
+    location,
+    taskId,
+    reviewer_id: userId,
+    checked_at: new Date().toISOString(),
+  });
 
   res.json({ ok: true });
 }

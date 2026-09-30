@@ -1,31 +1,20 @@
 const bcrypt = require("bcryptjs");
-const { ScanCommand, QueryCommand, GetCommand, PutCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
-const { docClient, Tables } = require("../config/db");
+const { User, Task, UserTask } = require("../models");
 
 async function listUsers(req, res) {
-  const { Items } = await docClient.send(new ScanCommand({ TableName: Tables.USERS }));
-  const users = (Items || []).sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
+  const users = await User.find({}).sort({ created_at: 1 });
   res.json(users.map(formatUser));
 }
 
 async function listEmployees(req, res) {
-  const { Items } = await docClient.send(new ScanCommand({
-    TableName: Tables.USERS,
-    FilterExpression: "#r = :role",
-    ExpressionAttributeNames: { "#r": "role" },
-    ExpressionAttributeValues: { ":role": "employee" },
-  }));
+  const users = await User.find({ role: "employee" }).sort({ name: 1 });
 
   const employees = [];
-  for (const row of (Items || []).sort((a, b) => a.name.localeCompare(b.name))) {
-    const { Items: tasks } = await docClient.send(new QueryCommand({
-      TableName: Tables.USER_TASKS,
-      KeyConditionExpression: "userId = :uid",
-      ExpressionAttributeValues: { ":uid": row.id },
-    }));
+  for (const row of users) {
+    const tasks = await UserTask.find({ userId: row.id });
     employees.push({
       ...formatUser(row),
-      taskIds: (tasks || []).map((t) => t.taskId),
+      taskIds: tasks.map((t) => t.taskId),
     });
   }
   res.json(employees);
@@ -40,30 +29,20 @@ async function createUser(req, res) {
     return res.status(400).json({ error: "Name, employee code, username and password required." });
   }
 
-  const { Items: byUsername } = await docClient.send(new QueryCommand({
-    TableName: Tables.USERS,
-    IndexName: "username-index",
-    KeyConditionExpression: "username = :u",
-    ExpressionAttributeValues: { ":u": uname },
-  }));
-  if (byUsername && byUsername.length > 0) {
+  const byUsername = await User.findOne({ username: uname });
+  if (byUsername) {
     return res.status(409).json({ error: "Username already exists." });
   }
 
-  const { Items: byCode } = await docClient.send(new QueryCommand({
-    TableName: Tables.USERS,
-    IndexName: "employeeCode-index",
-    KeyConditionExpression: "employee_code = :c",
-    ExpressionAttributeValues: { ":c": code },
-  }));
-  if (byCode && byCode.length > 0) {
+  const byCode = await User.findOne({ employee_code: code });
+  if (byCode) {
     return res.status(409).json({ error: "Employee code already exists." });
   }
 
   const id = `e-${Date.now()}`;
   const hash = await bcrypt.hash(password, 10);
 
-  const item = {
+  const newUser = new User({
     id,
     name: name.trim(),
     username: uname,
@@ -72,27 +51,17 @@ async function createUser(req, res) {
     location: location || null,
     employee_code: code,
     phone: phone || null,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-  if (designation) item.designation = designation;
-  if (supervisorId) item.supervisor_id = supervisorId;
-  if (req.body.managerId) item.manager_id = req.body.managerId;
+    designation: designation || null,
+    supervisor_id: supervisorId || null,
+    manager_id: req.body.managerId || null,
+    is_active: true,
+  });
 
-  await docClient.send(new PutCommand({
-    TableName: Tables.USERS,
-    Item: item,
-  }));
+  await newUser.save();
 
-  const { Items: allTasks } = await docClient.send(new ScanCommand({
-    TableName: Tables.TASKS,
-  }));
-
-  for (const task of (allTasks || [])) {
-    await docClient.send(new PutCommand({
-      TableName: Tables.USER_TASKS,
-      Item: { userId: id, taskId: task.id },
-    }));
+  const allTasks = await Task.find({});
+  for (const task of allTasks) {
+    await UserTask.create({ userId: id, taskId: task.id });
   }
 
   res.status(201).json({ ok: true, id });
@@ -105,43 +74,20 @@ async function deleteUser(req, res) {
     return res.status(400).json({ error: "Cannot delete signed-in account." });
   }
 
-  const { Item: target } = await docClient.send(new GetCommand({
-    TableName: Tables.USERS,
-    Key: { id: userId },
-  }));
-
+  const target = await User.findOne({ id: userId });
   if (!target) {
     return res.status(404).json({ error: "User not found." });
   }
 
   if (target.role === "manager") {
-    const { Items: managers } = await docClient.send(new ScanCommand({
-      TableName: Tables.USERS,
-      FilterExpression: "#r = :role",
-      ExpressionAttributeNames: { "#r": "role" },
-      ExpressionAttributeValues: { ":role": "manager" },
-    }));
-    if ((managers || []).length <= 1) {
+    const managerCount = await User.countDocuments({ role: "manager" });
+    if (managerCount <= 1) {
       return res.status(400).json({ error: "Keep at least one manager." });
     }
   }
 
-  await docClient.send(new DeleteCommand({
-    TableName: Tables.USERS,
-    Key: { id: userId },
-  }));
-
-  const { Items: userTasks } = await docClient.send(new QueryCommand({
-    TableName: Tables.USER_TASKS,
-    KeyConditionExpression: "userId = :uid",
-    ExpressionAttributeValues: { ":uid": userId },
-  }));
-  for (const ut of (userTasks || [])) {
-    await docClient.send(new DeleteCommand({
-      TableName: Tables.USER_TASKS,
-      Key: { userId: ut.userId, taskId: ut.taskId },
-    }));
-  }
+  await User.deleteOne({ id: userId });
+  await UserTask.deleteMany({ userId });
 
   res.json({ ok: true });
 }
