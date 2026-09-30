@@ -1,0 +1,266 @@
+[
+  {
+    "Name": "Suvrat Jain",
+    "Username": "suvrat",
+    "Password": "Suvrat@123",
+    "Role": "manager",
+    "Designation": "ceo",
+    "Employee Code": "OWEMP-0001"
+  },
+  {
+    "Name": "Anil Purdhani",
+    "Username": "anil",
+    "Password": "Anil@123",
+    "Role": "manager",
+    "Designation": "co-founder",
+    "Employee Code": "OWEMP-0034"
+  },
+  {
+    "Name": "Mannat Jain",
+    "Username": "mannat",
+    "Password": "Mannat@123",
+    "Role": "manager",
+    "Designation": "marketing-head",
+    "Employee Code": "OWEMP-0003"
+  },
+  {
+    "Name": "Priyanka Jain",
+    "Username": "priyanka.jain",
+    "Password": "Priyanka@123",
+    "Role": "manager",
+    "Designation": "project-design-head",
+    "Employee Code": "OWEMP-0002"
+  },
+  {
+    "Name": "Ipshita B. Roy",
+    "Username": "ipshita",
+    "Password": "Ipshita@123",
+    "Role": "manager",
+    "Designation": "hr-manager",
+    "Employee Code": "OWEMP-0029"
+  },
+  {
+    "Name": "Ravi Pawar",
+    "Username": "ravi",
+    "Password": "Ravi@123",
+    "Role": "manager",
+    "Designation": "cluster-manager",
+    "Employee Code": "OWEMP-0004"
+  },
+  {
+    "Name": "Abhishek Kumar",
+    "Username": "abhishek.kumar",
+    "Password": "Abhishek@123",
+    "Role": "manager",
+    "Designation": "cluster-manager",
+    "Employee Code": "OWEMP-0013"
+  },
+  {
+    "Name": "Gurdeep Kumar",
+    "Username": "gurdeep",
+    "Password": "Gurdeep@123",
+    "Role": "manager",
+    "Designation": "it-manager",
+    "Employee Code": "OWEMP-0005"
+  },
+  {
+    "Name": "Manish Chaudhary",
+    "Username": "manish",
+    "Password": "Manish@123",
+    "Role": "employee",
+    "Designation": "it-executive",
+    "Employee Code": "OWEMP-0031"
+  },
+  {
+    "Name": "Sarshti Singh",
+    "Username": "sarshti",
+    "Password": "Sarshti@123",
+    "Role": "manager",
+    "Designation": "sales-manager",
+    "Employee Code": "OWEMP-0015"
+  },
+  {
+    "Name": "Shreya Saran",
+    "Username": "shreya",
+    "Password": "Shreya@123",
+    "Role": "employee",
+    "Designation": "lead-inside-sales",
+    "Employee Code": "OWEMP-0035"
+  },
+  {
+    "Name": "Vineeta Sanduja",
+    "Username": "vineeta",
+    "Password": "Vineeta@123",
+    "Role": "manager",
+    "Designation": "business-ops-head",
+    "Employee Code": "OWEMP-0018"
+  },
+  {
+    "Name": "Sandeep Mishra",
+    "Username": "sandeep",
+    "Password": "Sandeep@123",
+    "Role": "manager",
+    "Designation": "ops-maintenance",
+    "Employee Code": "OWEMP-0019"
+  },
+  {
+    "Name": "Devendra Kumar Mehta",
+    "Username": "devendra",
+    "Password": "Devendra@123",
+    "Role": "employee",
+    "Designation": "maintenance",
+    "Employee Code": "OWEMP-0024"
+  },
+  {
+    "Name": "Arpit Tanwar",
+    "Username": "arpit",
+    "Password": "Arpit@123",
+    "Role": "employee",
+    "Designation": "cm",
+    "Employee Code": "OWEMP-0007"
+  },
+  {
+    "Name": "Abhishek Dalal",
+    "Username": "abhishek",
+    "Password": "Abhishek@123",
+    "Role": "employee",
+    "Designation": "cm",
+    "Employee Code": "OWEMP-0012"
+  },
+  {
+    "Name": "Anubhav",
+    "Username": "anubhav",
+    "Password": "Anubhav@123",
+    "Role": "employee",
+    "Designation": "cm",
+    "Employee Code": "OWEMP-0022"
+  },
+  {
+    "Name": "Akanksha Mohanty",
+    "Username": "akanksha",
+    "Password": "Akanksha@123",
+    "Role": "employee",
+    "Designation": "cm",
+    "Employee Code": "OWEMP-0032"
+  },
+  {
+    "Name": "Kamal Khanna",
+    "Username": "kamal",
+    "Password": "Kamal@123",
+    "Role": "employee",
+    "Designation": "cm",
+    "Employee Code": "OWEMP-0023"
+  },
+  {
+    "Name": "Kartik Sharma",
+    "Username": "kartik",
+    "Password": "Kartik@123",
+    "Role": "employee",
+    "Designation": "cm",
+    "Employee Code": "OWEMP-0038"
+  },
+  {
+    "Name": "Mukund Raj Choudhary",
+    "Username": "mukund",
+    "Password": "Mukund@123",
+    "Role": "employee",
+    "Designation": "supervisor",
+    "Employee Code": "OWEMP-0010"
+  },
+  {
+    "Name": "Harish Naagar",
+    "Username": "harish",
+    "Password": "Harish@123",
+    "Role": "employee",
+    "Designation": "supervisor",
+    "Employee Code": "OWEMP-0030"
+  },
+  {
+    "Name": "Amit Kumar",
+    "Username": "amit",
+    "Password": "Amit@123",
+    "Role": "employee",
+    "Designation": "supervisor",
+    "Employee Code": "OWEMP-0016"
+  },
+  {
+    "Name": "Sameer Kumar",
+    "Username": "sameer",
+    "Password": "Sameer@123",
+    "Role": "employee",
+    "Designation": "supervisor",
+    "Employee Code": "OWEMP-0021"
+  },
+  {
+    "Name": "Saroj Kumar",
+    "Username": "saroj",
+    "Password": "Saroj@123",
+    "Role": "employee",
+    "Designation": "supervisor",
+    "Employee Code": "OWEMP-0009"
+  },
+  {
+    "Name": "Akash Kumar",
+    "Username": "akash",
+    "Password": "Akash@123",
+    "Role": "employee",
+    "Designation": "supervisor",
+    "Employee Code": "OWEMP-0040"
+  },
+  {
+    "Name": "Mohammad Sameer",
+    "Username": "sameer.ece",
+    "Password": "Sameer@123",
+    "Role": "employee",
+    "Designation": "supervisor",
+    "Employee Code": "OWEMP-0033"
+  },
+  {
+    "Name": "Vikas",
+    "Username": "vikas",
+    "Password": "Vikas@123",
+    "Role": "employee",
+    "Designation": "supervisor",
+    "Employee Code": "OWEMP-0008"
+  },
+  {
+    "Name": "Dileep Kumar Prajapat",
+    "Username": "dileep",
+    "Password": "Dileep@123",
+    "Role": "employee",
+    "Designation": "facility-manager-tech",
+    "Employee Code": "OWEMP-0028"
+  },
+  {
+    "Name": "Shiva Bhati",
+    "Username": "shiva",
+    "Password": "Shiva@123",
+    "Role": "employee",
+    "Designation": "sr-facility-executive",
+    "Employee Code": "\u2014"
+  },
+  {
+    "Name": "Priyanka Kashyap",
+    "Username": "priyanka.k",
+    "Password": "Priyanka@123",
+    "Role": "employee",
+    "Designation": "front-desk-admin",
+    "Employee Code": "OWEMP-0025"
+  },
+  {
+    "Name": "Shyam Sundar",
+    "Username": "shyam",
+    "Password": "Shyam@123",
+    "Role": "employee",
+    "Designation": "helpdesk-executive",
+    "Employee Code": "OWEMP-0026"
+  },
+  {
+    "Name": "Arun Bhardwaj",
+    "Username": "arun",
+    "Password": "Arun@123",
+    "Role": "employee",
+    "Designation": "supervisor",
+    "Employee Code": "\u2014"
+  }
+]
