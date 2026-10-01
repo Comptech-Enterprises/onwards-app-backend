@@ -101,6 +101,7 @@ function formatUser(row) {
     location: row.location,
     employeeCode: row.employee_code,
     phone: row.phone,
+    email: row.email || null,
     designation: row.designation || null,
     supervisorId: row.supervisor_id || null,
     managerId: row.manager_id || null,
