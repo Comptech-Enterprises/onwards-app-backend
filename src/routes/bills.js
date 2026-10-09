@@ -2,6 +2,7 @@ const { Router } = require("express");
 const {
   createBill,
   listBills,
+  getManagerBillsView,
   getBillById,
   updateBillStatus,
   deleteBill,
@@ -26,10 +27,22 @@ function handleBillUpload(req, res, next) {
   });
 }
 
+// 1. Manager / Leadership Tab View (with summary & hierarchy breakdown by Person, CM, and Centre)
+router.get("/manager", authenticate, getManagerBillsView);
+
+// 2. Standard Bills List (with query filters)
 router.get("/", authenticate, listBills);
+
+// 3. Create a Bill
 router.post("/", authenticate, handleBillUpload, createBill);
+
+// 4. View single bill details
 router.get("/:billId", authenticate, getBillById);
+
+// 5. Update bill status (Pending / Approved / Rejected)
 router.patch("/:billId/status", authenticate, updateBillStatus);
+
+// 6. Delete a bill
 router.delete("/:billId", authenticate, deleteBill);
 
 module.exports = router;
