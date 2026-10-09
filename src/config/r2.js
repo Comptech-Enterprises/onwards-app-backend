@@ -14,9 +14,9 @@ const r2 = new S3Client({
 const BUCKET = process.env.R2_BUCKET || "onwards";
 const PUBLIC_URL = process.env.R2_PUBLIC_URL;
 
-async function uploadToR2(fileBuffer, originalName, mimeType) {
-  const ext = path.extname(originalName);
-  const key = `photos/${crypto.randomUUID()}${ext}`;
+async function uploadToR2(fileBuffer, originalName, mimeType, folder = "photos") {
+  const ext = path.extname(originalName || "") || ".bin";
+  const key = `${folder}/${crypto.randomUUID()}${ext}`;
 
   await r2.send(new PutObjectCommand({
     Bucket: BUCKET,

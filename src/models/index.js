@@ -7,6 +7,7 @@ const Visitor = require("./Visitor");
 const Issue = require("./Issue");
 const ReviewCheck = require("./ReviewCheck");
 const Alert = require("./Alert");
+const Bill = require("./Bill");
 const ErrorLog = require("./ErrorLog");
 
 module.exports = {
@@ -19,5 +20,6 @@ module.exports = {
   Issue,
   ReviewCheck,
   Alert,
+  Bill,
   ErrorLog,
 };
