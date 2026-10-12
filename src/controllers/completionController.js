@@ -1,5 +1,12 @@
-const { Completion, User } = require("../models");
+const { Completion, User, Task, ChecklistPhoto } = require("../models");
 const { broadcast } = require("../ws");
+
+const PHOTO_LIMITS = {
+  Pantry: { min: 1, label: "pantry" },
+  Washroom: { min: 3, label: "washroom" },
+  "Common Areas": { min: 2, label: "common area" },
+  "Soft Services": { min: 1, label: "soft services staff" },
+};
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -97,6 +104,24 @@ async function toggleTask(req, res) {
       broadcast("completion", { userId: uid, taskId, status: "unchecked", periodKey });
     }
     return res.json({ ok: true, status: "unchecked" });
+  }
+
+  // Enforce Photo Gate: ensure minimum required photos are uploaded today before ticking
+  const task = await Task.findOne({ id: taskId });
+  const category = task?.category;
+  const gate = PHOTO_LIMITS[category];
+  if (gate && gate.min > 0) {
+    const candidateUserIds = Array.from(new Set([...targetUserIds, userId, req.user.id]));
+    const photoCount = await ChecklistPhoto.countDocuments({
+      periodKey,
+      category,
+      userId: { $in: candidateUserIds },
+    });
+    if (photoCount < gate.min) {
+      return res.status(400).json({
+        error: `Upload the required ${gate.label} photo(s) (${gate.min} min) before ticking this checklist. Currently uploaded: ${photoCount}/${gate.min}.`,
+      });
+    }
   }
 
   const completed_at = new Date().toISOString();

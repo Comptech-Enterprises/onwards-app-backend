@@ -98,12 +98,15 @@ function formatBill(row) {
     remarks: row.remark || "",
     amount: row.amount ?? null,
 
-    // Uploaded Document / Image
-    fileUrl: row.file_url,
-    file_url: row.file_url,
-    uploadUrl: row.file_url,
-    fileType: row.file_type || "image",
-    file_type: row.file_type || "image",
+    // Uploaded Document / Images (multi-page support)
+    fileUrl: row.file_url || (row.file_urls && row.file_urls[0]) || null,
+    file_url: row.file_url || (row.file_urls && row.file_urls[0]) || null,
+    uploadUrl: row.file_url || (row.file_urls && row.file_urls[0]) || null,
+    fileUrls: Array.isArray(row.file_urls) && row.file_urls.length > 0 ? row.file_urls : (row.file_url ? [row.file_url] : []),
+    file_urls: Array.isArray(row.file_urls) && row.file_urls.length > 0 ? row.file_urls : (row.file_url ? [row.file_url] : []),
+    pageCount: Array.isArray(row.file_urls) && row.file_urls.length > 0 ? row.file_urls.length : (row.file_url ? 1 : 0),
+    fileType: "image",
+    file_type: "image",
     fileName: row.file_name,
     file_name: row.file_name,
     fileSize: row.file_size,
@@ -121,6 +124,7 @@ function formatBill(row) {
 /**
  * POST /api/bills
  * Upload a bill with item name, remark, and connected CM/location/person information
+ * Supports uploading multiple photos for multi-page receipts (PDFs rejected)
  */
 async function createBill(req, res) {
   try {
@@ -134,21 +138,47 @@ async function createBill(req, res) {
       return res.status(400).json({ error: "Item name (item_name) is required." });
     }
 
-    if (!req.file) {
-      return res.status(400).json({ error: "Bill upload file (image or PDF) is required." });
+    const filesToUpload = req.files && req.files.length > 0
+      ? req.files
+      : (req.file ? [req.file] : []);
+
+    if (filesToUpload.length === 0) {
+      return res.status(400).json({ error: "Please upload at least one photo of the bill/receipt." });
+    }
+
+    // Verify all files are images (strictly reject PDFs)
+    for (const f of filesToUpload) {
+      const ext = path.extname(f.originalname || "").toLowerCase();
+      const mime = (f.mimetype || "").toLowerCase();
+      if (ext === ".pdf" || mime.includes("pdf")) {
+        return res.status(400).json({ error: "PDF uploads are not supported. Please upload photos/images only." });
+      }
     }
 
     // Auto-resolve or connect user hierarchy (person, designation, location, CM, Cluster Manager)
     const hierarchy = await resolveUserHierarchy(userId, req.body);
 
-    // Determine file type (image or pdf)
-    const ext = path.extname(req.file.originalname || "").toLowerCase();
-    const mime = (req.file.mimetype || "").toLowerCase();
-    const isPdf = ext === ".pdf" || mime.includes("pdf");
-    const fileType = isPdf ? "pdf" : "image";
+    // If CM: Strictly enforce upload only for their own centre with no option to pick another
+    if (req.user?.designation === "cm") {
+      hierarchy.location = req.user.location;
+      hierarchy.cmId = req.user.id;
+      hierarchy.cmName = req.user.name;
+    }
 
-    // Upload to Cloudflare R2 under 'bills' folder
-    const fileUrl = await uploadToR2(req.file.buffer, req.file.originalname, req.file.mimetype, "bills");
+    // Upload all images to Cloudflare R2 under 'bills' folder
+    const uploaded = await Promise.all(
+      filesToUpload.map(async (f) => {
+        const fileUrl = await uploadToR2(f.buffer, f.originalname, f.mimetype, "bills");
+        return {
+          fileUrl,
+          fileName: f.originalname || null,
+          fileSize: f.size || null,
+        };
+      })
+    );
+
+    const fileUrls = uploaded.map((u) => u.fileUrl);
+    const primary = uploaded[0];
 
     const id = `bill-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const now = new Date().toISOString();
@@ -168,10 +198,11 @@ async function createBill(req, res) {
       item_name: itemName,
       remark,
       amount: Number.isNaN(amount) ? null : amount,
-      file_url: fileUrl,
-      file_type: fileType,
-      file_name: req.file.originalname || null,
-      file_size: req.file.size || null,
+      file_url: primary.fileUrl,
+      file_urls: fileUrls,
+      file_type: "image",
+      file_name: primary.fileName,
+      file_size: primary.fileSize,
       status: "Pending",
       created_at: now,
       updated_at: null,
@@ -236,7 +267,10 @@ function buildBillFilter(query, user) {
   }
 
   // Filter by location
-  if (location && location !== "All" && location !== "All centres") {
+  if (user?.designation === "cm") {
+    // CM can only view/query bills for their own centre
+    if (user.location) filter.location = user.location;
+  } else if (location && location !== "All" && location !== "All centres") {
     filter.location = location;
   }
 
@@ -298,6 +332,10 @@ async function listBills(req, res) {
  */
 async function getManagerBillsView(req, res) {
   try {
+    if (req.user?.role !== "manager") {
+      return res.status(403).json({ error: "Only managers can access cross-centre manager bills view." });
+    }
+
     // For manager view, allow viewing all by default unless specific filters applied
     const query = { all: "true", ...req.query };
     const filter = buildBillFilter(query, req.user);
@@ -414,6 +452,10 @@ async function getBillById(req, res) {
  */
 async function updateBillStatus(req, res) {
   try {
+    if (req.user?.role !== "manager") {
+      return res.status(403).json({ error: "Only managers can update bill approval status." });
+    }
+
     const { billId } = req.params;
     const { status, status_remark, statusRemark, remark } = req.body;
 
@@ -463,14 +505,18 @@ async function deleteBill(req, res) {
       return res.status(404).json({ error: "Bill not found." });
     }
 
-    // Permission check: only creator or managers can delete
-    if (req.user.role !== "manager" && bill.user_id !== req.user.id) {
-      return res.status(403).json({ error: "You do not have permission to delete this bill." });
+    // Permission check: only managers can delete bills
+    if (req.user?.role !== "manager") {
+      return res.status(403).json({ error: "Delete option is restricted to managers only." });
     }
 
-    if (bill.file_url) {
+    const allUrls = Array.isArray(bill.file_urls) && bill.file_urls.length > 0
+      ? bill.file_urls
+      : (bill.file_url ? [bill.file_url] : []);
+
+    for (const u of allUrls) {
       try {
-        await deleteFromR2(bill.file_url);
+        await deleteFromR2(u);
       } catch (r2Err) {
         console.warn("[BILLS] Non-fatal R2 file deletion error:", r2Err.message);
       }

@@ -23,9 +23,10 @@ const billSchema = new mongoose.Schema(
     remark: { type: String, default: "", trim: true },
     amount: { type: Number, default: null },
 
-    // File Upload Details
+    // File Upload Details (Supports single or multiple page images)
     file_url: { type: String, required: true },
-    file_type: { type: String, default: "image" }, // 'image' or 'pdf'
+    file_urls: { type: [String], default: [] },
+    file_type: { type: String, default: "image" },
     file_name: { type: String, default: null },
     file_size: { type: Number, default: null },
 
