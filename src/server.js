@@ -24,7 +24,7 @@ const configRoutes = require("./routes/config");
 const reportsRoutes = require("./routes/reports");
 const { initSchedulers } = require("./jobs/scheduler");
 
-const nodemailer = require("nodemailer");
+const { sendMail } = require("./services/mailService");
 const http = require("http");
 const { initWebSocket } = require("./ws");
 
@@ -100,18 +100,11 @@ app.use(async (err, req, res, next) => {
     console.error("Failed to write error log:", logErr.message);
   }
 
-  const smtpUser = process.env.SMTP_USER || "info@onwardworkspaces.com";
-  const smtpPass = (process.env.SMTP_PASS || "lhieuhamjvzuyjdk").replace(/\s+/g, "");
   const errorNotifyTo = process.env.ERROR_NOTIFY_TO || "operations@onwardworkspaces.com";
-  if (smtpUser && smtpPass && errorNotifyTo) {
+  if (errorNotifyTo) {
     try {
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: { user: smtpUser, pass: smtpPass },
-      });
-      await transporter.sendMail({
-        from: `"Onwards Error Alert" <operations@onwardworkspaces.com>`,
-        to: errorNotifyTo,
+      await sendMail({
+        to: errorNotifyTo.split(",").map((s) => s.trim()).filter(Boolean),
         subject: `[ERROR] ${req.method} ${req.path} — ${err.message || "Unknown error"}`,
         html: `<h3>Error on Onwards API</h3>
 <p><strong>ID:</strong> ${errorId}</p>

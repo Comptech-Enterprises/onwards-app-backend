@@ -1,5 +1,5 @@
-const nodemailer = require("nodemailer");
 const { User, Completion, UserTask } = require("../models");
+const { sendMail } = require("../services/mailService");
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -42,12 +42,13 @@ async function getDailySummary(req, res) {
 }
 
 async function sendSummaryEmail(req, res) {
-  const user = process.env.SMTP_USER || "info@onwardworkspaces.com";
-  const pass = (process.env.SMTP_PASS || "lhieuhamjvzuyjdk").replace(/\s+/g, "");
-  const to = (process.env.SUMMARY_TO || "operations@onwardworkspaces.com").split(",").map((s) => s.trim()).filter(Boolean);
+  const to = (process.env.SUMMARY_TO || "operations@onwardworkspaces.com")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
-  if (!user || !pass || to.length === 0) {
-    return res.status(503).json({ ok: false, error: "SMTP not configured." });
+  if (to.length === 0) {
+    return res.status(503).json({ ok: false, error: "No recipients configured." });
   }
 
   const { date, rows } = req.body;
@@ -83,16 +84,8 @@ async function sendSummaryEmail(req, res) {
     </table>
   `;
 
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: { user, pass },
-  });
-
-  const from = process.env.MAIL_FROM || `"Onward Tasks" <operations@onwardworkspaces.com>`;
-
   try {
-    await transporter.sendMail({
-      from,
+    await sendMail({
       to,
       subject: `Daily task summary — ${escapeHtml(date)}`,
       html,

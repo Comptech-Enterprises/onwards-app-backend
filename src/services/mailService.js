@@ -1,14 +1,4 @@
-const nodemailer = require("nodemailer");
-
-function getTransporter() {
-  const user = process.env.SMTP_USER || "info@onwardworkspaces.com";
-  const pass = (process.env.SMTP_PASS || "lhieuhamjvzuyjdk").replace(/\s+/g, "");
-
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: { user, pass },
-  });
-}
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
 const REPORT_RECIPIENTS = {
   daily: [
@@ -37,27 +27,43 @@ const REPORT_RECIPIENTS = {
 };
 
 async function sendMail({ to, subject, html }) {
-  const transporter = getTransporter();
-  const from = process.env.MAIL_FROM || `"Onwards Operations" <operations@onwardworkspaces.com>`;
-  
-  const recipientList = Array.isArray(to) ? to : [to];
-  if (recipientList.length === 0) {
-    throw new Error("No recipients specified.");
-  }
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) throw new Error("BREVO_API_KEY not configured.");
 
-  const info = await transporter.sendMail({
-    from,
-    to: recipientList.join(", "),
+  const senderEmail = process.env.MAIL_FROM_EMAIL || "operations@onwardworkspaces.com";
+  const senderName = process.env.MAIL_FROM_NAME || "Onwards Operations";
+
+  const recipientList = Array.isArray(to) ? to : [to];
+  if (recipientList.length === 0) throw new Error("No recipients specified.");
+
+  const body = {
+    sender: { name: senderName, email: senderEmail },
+    to: recipientList.map((email) => ({ email: email.trim() })),
     subject,
-    html,
+    htmlContent: html,
+  };
+
+  const response = await fetch(BREVO_API_URL, {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "content-type": "application/json",
+      "api-key": apiKey,
+    },
+    body: JSON.stringify(body),
   });
 
-  console.log(`[EMAIL] Sent "${subject}" to ${recipientList.join(", ")} (MessageId: ${info.messageId})`);
-  return info;
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Brevo API error (${response.status}): ${error}`);
+  }
+
+  const result = await response.json();
+  console.log(`[EMAIL] Sent "${subject}" to ${recipientList.join(", ")} (messageId: ${result.messageId})`);
+  return result;
 }
 
 module.exports = {
-  getTransporter,
   REPORT_RECIPIENTS,
   sendMail,
 };
