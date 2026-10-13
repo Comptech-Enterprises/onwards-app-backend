@@ -4,13 +4,32 @@ const {
   generateAndSendWeeklyReport,
   generateAndSendMonthlyReport,
   generateAndSendQuarterlyReport,
+  sendDeadlineReminders,
 } = require("../services/reportService");
 
 function initSchedulers() {
   const timezone = process.env.APP_TIMEZONE || "Asia/Kolkata";
+  const reminderTime = process.env.REMINDER_AT || "11:00";
+  const [reminderHour, reminderMin] = reminderTime.split(":").map(Number);
+
   console.log(`[SCHEDULER] Initializing automated report schedulers (Timezone: ${timezone})...`);
 
-  // 1. Daily Report: Every day at 18:30 IST (6:30 PM) -> Ravi Pawar & Abhishek Gupta
+  // 0. Pre-Deadline Reminder: Every day before deadline (default 11:00 IST, deadline 12:30)
+  cron.schedule(
+    `${reminderMin} ${reminderHour} * * *`,
+    async () => {
+      console.log("[CRON] Running Pre-Deadline Reminder Job...");
+      try {
+        await sendDeadlineReminders();
+      } catch (err) {
+        console.error("[CRON ERROR] Deadline Reminder failed:", err.message);
+      }
+    },
+    { timezone }
+  );
+  console.log(`[SCHEDULER] Registered Pre-Deadline Reminder Job (${reminderMin} ${reminderHour} * * *)`);
+
+  // 1. Daily Report: Every day at 18:30 IST (6:30 PM)
   cron.schedule(
     "30 18 * * *",
     async () => {
@@ -25,7 +44,7 @@ function initSchedulers() {
   );
   console.log("[SCHEDULER] Registered Daily Report Job (30 18 * * *)");
 
-  // 2. Weekly Report: Every Monday at 09:00 IST (9:00 AM) -> Mannat Jain & Vineeta Sanduja
+  // 2. Weekly Report: Every Monday at 09:00 IST (9:00 AM)
   cron.schedule(
     "0 9 * * 1",
     async () => {
@@ -40,7 +59,7 @@ function initSchedulers() {
   );
   console.log("[SCHEDULER] Registered Weekly Report Job (0 9 * * 1)");
 
-  // 3. Monthly Report + Image Cleanup: 1st of every month at 09:00 IST -> Ravi, Abhishek, Vineeta & Mannat
+  // 3. Monthly Report + Image Cleanup: 1st of every month at 09:00 IST
   cron.schedule(
     "0 9 1 * *",
     async () => {
@@ -59,7 +78,7 @@ function initSchedulers() {
   );
   console.log("[SCHEDULER] Registered Monthly Report Job (0 9 1 * *)");
 
-  // 4. Quarterly Report + 90-Day Data Retention Cleanup: 1st of Jan, Apr, Jul, Oct at 09:30 IST -> Vineeta, Mannat & Anil Purdhani
+  // 4. Quarterly Report + 90-Day Data Retention Cleanup: 1st of Jan, Apr, Jul, Oct at 09:30 IST
   cron.schedule(
     "30 9 1 1,4,7,10 *",
     async () => {

@@ -4,6 +4,7 @@ const {
   sendWeekly,
   sendMonthly,
   sendQuarterly,
+  sendReminders,
   triggerImageCleanup,
   triggerQuarterlyDataCleanup,
 } = require("../controllers/reportController");
@@ -15,6 +16,7 @@ router.post("/daily/send", authenticate, requireManager, sendDaily);
 router.post("/weekly/send", authenticate, requireManager, sendWeekly);
 router.post("/monthly/send", authenticate, requireManager, sendMonthly);
 router.post("/quarterly/send", authenticate, requireManager, sendQuarterly);
+router.post("/reminders/send", authenticate, requireManager, sendReminders);
 router.post("/cleanup/images", authenticate, requireManager, triggerImageCleanup);
 router.post("/cleanup/data", authenticate, requireManager, triggerQuarterlyDataCleanup);
 

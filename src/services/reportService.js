@@ -1,4 +1,4 @@
-const { User, Completion, ChecklistPhoto, Visitor, Issue } = require("../models");
+const { User, Task, Completion, ChecklistPhoto, Visitor, Issue, UserTask, Alert } = require("../models");
 const { deleteFromR2 } = require("../config/r2");
 const { sendMail, REPORT_RECIPIENTS } = require("./mailService");
 
@@ -575,11 +575,159 @@ async function cleanupQuarterlyData(cutoffDateStr = todayKey(-90)) {
   return { deleted };
 }
 
+// -------------------------------------------------------------
+// 6. DEADLINE REMINDER (Individual Pending Task Emails)
+// -------------------------------------------------------------
+async function sendDeadlineReminders(testRecipientOverride = null) {
+  const today = todayKey();
+  const deadline = process.env.NOTIFY_DEADLINE || "12:30";
+
+  const employees = await User.find({ role: "employee", is_active: true });
+  const allTasks = await Task.find({});
+  const completions = await Completion.find({ periodKey: today });
+
+  const taskMap = {};
+  for (const t of allTasks) taskMap[t.id] = t;
+
+  const completedMap = {};
+  for (const c of completions) {
+    if (!completedMap[c.userId]) completedMap[c.userId] = new Set();
+    completedMap[c.userId].add(c.taskId);
+  }
+
+  let emailsSent = 0;
+  let alertsCreated = 0;
+  let skippedNoEmail = 0;
+
+  for (const emp of employees) {
+    const assignedTasks = await UserTask.find({ userId: emp.id });
+    const totalAssigned = assignedTasks.length;
+    if (totalAssigned === 0) continue;
+
+    const completedSet = completedMap[emp.id] || new Set();
+    const pendingTaskIds = assignedTasks.filter((t) => !completedSet.has(t.taskId));
+    const pendingCount = pendingTaskIds.length;
+
+    if (pendingCount === 0) continue;
+
+    const doneCount = totalAssigned - pendingCount;
+    const pct = Math.round((doneCount / totalAssigned) * 100);
+
+    const pendingCategories = {};
+    for (const ut of pendingTaskIds) {
+      const task = taskMap[ut.taskId];
+      const category = task ? task.category : "Other";
+      pendingCategories[category] = (pendingCategories[category] || 0) + 1;
+    }
+
+    await Alert.create({
+      id: `a-${Date.now()}-${emp.id}`,
+      userId: emp.id,
+      type: "warning",
+      title: `Deadline Reminder: ${pendingCount} pending task${pendingCount > 1 ? "s" : ""}`,
+      body: `You have ${pendingCount} of ${totalAssigned} tasks still pending for today (${today}). Deadline was ${deadline}. Please complete them as soon as possible.`,
+      is_read: false,
+      created_at: new Date().toISOString(),
+    });
+    alertsCreated++;
+
+    const recipientEmail = testRecipientOverride || emp.email;
+    if (!recipientEmail) {
+      skippedNoEmail++;
+      continue;
+    }
+
+    const categoryRows = Object.entries(pendingCategories).map(([category, count]) => `
+      <tr style="border-bottom: 1px solid #EDF2F7;">
+        <td style="padding: 10px 12px; font-weight: 600; color: #4A5568; font-size: 13px;">
+          ${escapeHtml(category)}
+        </td>
+        <td style="padding: 10px 12px; text-align: center;">
+          <span style="background: #FFEBEE; color: #C62828; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 700;">
+            ${count} pending
+          </span>
+        </td>
+      </tr>
+    `).join("");
+
+    const progressColor = pct >= 80 ? "#2E7D32" : pct >= 50 ? "#E65100" : "#C62828";
+
+    const html = `
+      <div style="${getEmailStyles()}">
+        ${getHeaderHtml("Task Deadline Reminder", `Pending tasks for ${today}`, "ACTION REQUIRED")}
+
+        <div style="background: #F7FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+          <div style="font-size: 16px; font-weight: 700; color: #2D3748; margin-bottom: 4px;">
+            Hi ${escapeHtml(emp.name)},
+          </div>
+          <div style="font-size: 13px; color: #718096;">
+            ${escapeHtml(emp.designation)} • ${escapeHtml(emp.location)}
+          </div>
+        </div>
+
+        <div style="background: #FFF5F5; border: 1px solid #FED7D7; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+          <div style="font-size: 14px; font-weight: 700; color: #C53030; margin-bottom: 8px;">
+            ${pendingCount} of ${totalAssigned} tasks are still pending
+          </div>
+          <div style="font-size: 13px; color: #742A2A;">
+            Your deadline is <strong>${deadline} IST</strong> today. Please complete your remaining tasks before the deadline.
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+          <div style="flex: 1; background: #F7FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #718096; text-transform: uppercase; font-weight: 600;">Completed</div>
+            <div style="font-size: 20px; font-weight: 800; color: #2E7D32; margin-top: 4px;">${doneCount}</div>
+          </div>
+          <div style="flex: 1; background: #FFF5F5; border: 1px solid #FED7D7; padding: 12px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #718096; text-transform: uppercase; font-weight: 600;">Pending</div>
+            <div style="font-size: 20px; font-weight: 800; color: #C62828; margin-top: 4px;">${pendingCount}</div>
+          </div>
+          <div style="flex: 1; background: #F7FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #718096; text-transform: uppercase; font-weight: 600;">Progress</div>
+            <div style="font-size: 20px; font-weight: 800; color: ${progressColor}; margin-top: 4px;">${pct}%</div>
+          </div>
+        </div>
+
+        <h3 style="color: #2D3748; font-size: 14px; margin-bottom: 8px;">Pending by Category</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #EDF2F7; color: #4A5568; font-size: 11px; text-transform: uppercase;">
+              <th style="padding: 8px 12px; text-align: left;">Category</th>
+              <th style="padding: 8px 12px; text-align: center;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${categoryRows}
+          </tbody>
+        </table>
+
+        ${getFooterHtml()}
+      </div>
+    `;
+
+    try {
+      await sendMail({
+        to: recipientEmail,
+        subject: `⚠ ${pendingCount} pending tasks — ${escapeHtml(emp.name)} (${today})`,
+        html,
+      });
+      emailsSent++;
+    } catch (err) {
+      console.error(`[REMINDER] Failed to send to ${recipientEmail} for ${emp.name}:`, err.message);
+    }
+  }
+
+  console.log(`[REMINDER] Done: ${alertsCreated} in-app alerts, ${emailsSent} emails sent, ${skippedNoEmail} skipped (no email).`);
+  return { alertsCreated, emailsSent, skippedNoEmail };
+}
+
 module.exports = {
   generateAndSendDailyReport,
   generateAndSendWeeklyReport,
   generateAndSendMonthlyReport,
   generateAndSendQuarterlyReport,
+  sendDeadlineReminders,
   cleanupMonthlyImages,
   cleanupQuarterlyData,
 };

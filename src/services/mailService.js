@@ -30,8 +30,8 @@ async function sendMail({ to, subject, html }) {
   const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) throw new Error("BREVO_API_KEY not configured.");
 
-  const senderEmail = process.env.MAIL_FROM_EMAIL || "operations@onwardworkspaces.com";
-  const senderName = process.env.MAIL_FROM_NAME || "Onwards Operations";
+  const senderEmail = process.env.MAIL_FROM_EMAIL || "mannat@onwardworkspaces.com";
+  const senderName = process.env.MAIL_FROM_NAME || "Onward Workspaces";
 
   const recipientList = Array.isArray(to) ? to : [to];
   if (recipientList.length === 0) throw new Error("No recipients specified.");

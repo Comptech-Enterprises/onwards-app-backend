@@ -3,6 +3,7 @@ const {
   generateAndSendWeeklyReport,
   generateAndSendMonthlyReport,
   generateAndSendQuarterlyReport,
+  sendDeadlineReminders,
   cleanupMonthlyImages,
   cleanupQuarterlyData,
 } = require("../services/reportService");
@@ -68,11 +69,22 @@ async function triggerQuarterlyDataCleanup(req, res) {
   }
 }
 
+async function sendReminders(req, res) {
+  try {
+    const { recipients } = req.body || {};
+    const result = await sendDeadlineReminders(recipients);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
 module.exports = {
   sendDaily,
   sendWeekly,
   sendMonthly,
   sendQuarterly,
+  sendReminders,
   triggerImageCleanup,
   triggerQuarterlyDataCleanup,
 };
