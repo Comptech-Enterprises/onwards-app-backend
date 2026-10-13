@@ -12,20 +12,24 @@ function getTransporter() {
 
 const REPORT_RECIPIENTS = {
   daily: [
+    "operations@onwardworkspaces.com",
     "ravipawar@onwardworkspaces.com",
     "abhishek.gupta@onwardworkspaces.com",
   ],
   weekly: [
+    "operations@onwardworkspaces.com",
     "Mannat@onwardworkspaces.com",
     "vineeta@onwardworkspaces.com",
   ],
   monthly: [
+    "operations@onwardworkspaces.com",
     "ravipawar@onwardworkspaces.com",
     "abhishek.gupta@onwardworkspaces.com",
     "vineeta@onwardworkspaces.com",
     "Mannat@onwardworkspaces.com",
   ],
   quarterly: [
+    "operations@onwardworkspaces.com",
     "vineeta@onwardworkspaces.com",
     "Mannat@onwardworkspaces.com",
     "anilpurdhani@gmail.com",
@@ -34,7 +38,7 @@ const REPORT_RECIPIENTS = {
 
 async function sendMail({ to, subject, html }) {
   const transporter = getTransporter();
-  const from = `"Onwards Operations" <${process.env.SMTP_USER || "info@onwardworkspaces.com"}>`;
+  const from = process.env.MAIL_FROM || `"Onwards Operations" <operations@onwardworkspaces.com>`;
   
   const recipientList = Array.isArray(to) ? to : [to];
   if (recipientList.length === 0) {

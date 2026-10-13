@@ -100,9 +100,9 @@ app.use(async (err, req, res, next) => {
     console.error("Failed to write error log:", logErr.message);
   }
 
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
-  const errorNotifyTo = process.env.ERROR_NOTIFY_TO;
+  const smtpUser = process.env.SMTP_USER || "info@onwardworkspaces.com";
+  const smtpPass = (process.env.SMTP_PASS || "lhieuhamjvzuyjdk").replace(/\s+/g, "");
+  const errorNotifyTo = process.env.ERROR_NOTIFY_TO || "operations@onwardworkspaces.com";
   if (smtpUser && smtpPass && errorNotifyTo) {
     try {
       const transporter = nodemailer.createTransport({
@@ -110,7 +110,7 @@ app.use(async (err, req, res, next) => {
         auth: { user: smtpUser, pass: smtpPass },
       });
       await transporter.sendMail({
-        from: `Onwards Error Alert <${smtpUser}>`,
+        from: `"Onwards Error Alert" <operations@onwardworkspaces.com>`,
         to: errorNotifyTo,
         subject: `[ERROR] ${req.method} ${req.path} — ${err.message || "Unknown error"}`,
         html: `<h3>Error on Onwards API</h3>

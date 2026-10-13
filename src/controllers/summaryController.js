@@ -42,9 +42,9 @@ async function getDailySummary(req, res) {
 }
 
 async function sendSummaryEmail(req, res) {
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const to = (process.env.SUMMARY_TO || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const user = process.env.SMTP_USER || "info@onwardworkspaces.com";
+  const pass = (process.env.SMTP_PASS || "lhieuhamjvzuyjdk").replace(/\s+/g, "");
+  const to = (process.env.SUMMARY_TO || "operations@onwardworkspaces.com").split(",").map((s) => s.trim()).filter(Boolean);
 
   if (!user || !pass || to.length === 0) {
     return res.status(503).json({ ok: false, error: "SMTP not configured." });
@@ -88,9 +88,11 @@ async function sendSummaryEmail(req, res) {
     auth: { user, pass },
   });
 
+  const from = process.env.MAIL_FROM || `"Onward Tasks" <operations@onwardworkspaces.com>`;
+
   try {
     await transporter.sendMail({
-      from: `Onward Tasks <${user}>`,
+      from,
       to,
       subject: `Daily task summary — ${escapeHtml(date)}`,
       html,
