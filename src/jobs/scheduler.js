@@ -96,6 +96,31 @@ function initSchedulers() {
     { timezone }
   );
   console.log("[SCHEDULER] Registered Quarterly Report Job (30 9 1 1,4,7,10 *)");
+
+  // 5. 3-Day Unresolved Issue Escalation: Every hour, check for issues open >= 72 hours
+  const { checkAndEscalateOverdueIssues } = require("../services/issueEscalationService");
+  cron.schedule(
+    "0 * * * *",
+    async () => {
+      console.log("[CRON] Running 3-Day Unresolved Issue Escalation Check...");
+      try {
+        await checkAndEscalateOverdueIssues();
+      } catch (err) {
+        console.error("[CRON ERROR] Issue Escalation failed:", err.message);
+      }
+    },
+    { timezone }
+  );
+  console.log("[SCHEDULER] Registered 3-Day Issue Escalation Job (0 * * * *)");
+
+  // Initial check on server launch (after 10s delay to allow DB/WS initialization)
+  setTimeout(async () => {
+    try {
+      await checkAndEscalateOverdueIssues();
+    } catch (err) {
+      console.error("[INITIAL CHECK] Issue Escalation failed:", err.message);
+    }
+  }, 10000);
 }
 
 module.exports = { initSchedulers };

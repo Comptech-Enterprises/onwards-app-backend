@@ -8,8 +8,10 @@ const REPORT_RECIPIENTS = {
   ],
   weekly: [
     "operations@onwardworkspaces.com",
-    "Mannat@onwardworkspaces.com",
+    "ravipawar@onwardworkspaces.com",
+    "abhishek.gupta@onwardworkspaces.com",
     "vineeta@onwardworkspaces.com",
+    "Mannat@onwardworkspaces.com",
   ],
   monthly: [
     "operations@onwardworkspaces.com",
@@ -20,6 +22,8 @@ const REPORT_RECIPIENTS = {
   ],
   quarterly: [
     "operations@onwardworkspaces.com",
+    "ravipawar@onwardworkspaces.com",
+    "abhishek.gupta@onwardworkspaces.com",
     "vineeta@onwardworkspaces.com",
     "Mannat@onwardworkspaces.com",
     "anilpurdhani@gmail.com",
