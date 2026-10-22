@@ -95,11 +95,15 @@ async function createBill(req, res) {
     // Auto-resolve or connect user hierarchy (person, designation, location, CM, Cluster Manager)
     const hierarchy = await resolveUserHierarchy(userId, req.body);
 
-    // If CM: Strictly enforce upload only for their own centre with no option to pick another
-    if (req.user?.designation === "cm") {
-      hierarchy.location = req.user.location;
-      hierarchy.cmId = req.user.id;
-      hierarchy.cmName = req.user.name;
+    // If CM: upload allowed only for their own centre or a centre of one of their supervisors
+    const me = await User.findOne({ id: userId }).lean();
+    if (me?.designation === "cm") {
+      const team = await User.find({ supervisor_id: me.id }).select("location").lean();
+      const allowed = [...new Set([me.location, ...team.map((t) => t.location)].filter(Boolean))];
+      const requested = (req.body.location || "").trim();
+      hierarchy.location = allowed.includes(requested) ? requested : me.location;
+      hierarchy.cmId = me.id;
+      hierarchy.cmName = me.name;
     }
 
     // Upload all images to Cloudflare R2 under 'bills' folder
