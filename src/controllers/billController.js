@@ -162,7 +162,7 @@ async function createBill(req, res) {
 /**
  * Build MongoDB filter query from request query params
  */
-function buildBillFilter(query, user) {
+function buildBillFilter(query, user, centres = []) {
   const filter = {};
   const {
     location,
@@ -184,7 +184,7 @@ function buildBillFilter(query, user) {
   const targetUser = userId || employeeId;
   if (targetUser) {
     filter.user_id = targetUser;
-  } else if (user.role === "employee" && all !== "true" && !location && !cmId && !cm_id) {
+  } else if (user.role === "employee" && user.designation !== "cm" && all !== "true" && !location && !cmId && !cm_id) {
     // If regular supervisor views without filters, default to own bills
     filter.user_id = user.id;
   }
@@ -205,8 +205,8 @@ function buildBillFilter(query, user) {
 
   // Filter by location
   if (user?.designation === "cm") {
-    // CM can only view/query bills for their own centre
-    if (user.location) filter.location = user.location;
+    // CM sees bills from their own centre, their own uploads, and every supervisor reporting to them
+    filter.$and = [{ $or: [{ cm_id: user.id }, { user_id: user.id }, ...(centres.length > 0 ? [{ location: { $in: centres } }] : [])] }];
   } else if (location && location !== "All" && location !== "All centres") {
     filter.location = location;
   }
@@ -253,7 +253,12 @@ function buildBillFilter(query, user) {
  */
 async function listBills(req, res) {
   try {
-    const filter = buildBillFilter(req.query, req.user);
+    let centres = [];
+    if (req.user?.designation === "cm") {
+      const team = await User.find({ supervisor_id: req.user.id }).select("location").lean();
+      centres = [...new Set([req.user.location, ...team.map((t) => t.location)].filter(Boolean))];
+    }
+    const filter = buildBillFilter(req.query, req.user, centres);
     const bills = await Bill.find(filter).sort({ created_at: -1 }).lean();
     return res.json(bills.map(formatBill));
   } catch (err) {
