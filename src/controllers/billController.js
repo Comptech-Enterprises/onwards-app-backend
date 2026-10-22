@@ -253,12 +253,14 @@ function buildBillFilter(query, user, centres = []) {
  */
 async function listBills(req, res) {
   try {
+    const me = (await User.findOne({ id: req.user.id }).lean()) || req.user;
+    const viewer = { ...req.user, role: me.role, designation: me.designation, location: me.location };
     let centres = [];
-    if (req.user?.designation === "cm") {
-      const team = await User.find({ supervisor_id: req.user.id }).select("location").lean();
-      centres = [...new Set([req.user.location, ...team.map((t) => t.location)].filter(Boolean))];
+    if (viewer.designation === "cm") {
+      const team = await User.find({ supervisor_id: viewer.id }).select("location").lean();
+      centres = [...new Set([viewer.location, ...team.map((t) => t.location)].filter(Boolean))];
     }
-    const filter = buildBillFilter(req.query, req.user, centres);
+    const filter = buildBillFilter(req.query, viewer, centres);
     const bills = await Bill.find(filter).sort({ created_at: -1 }).lean();
     return res.json(bills.map(formatBill));
   } catch (err) {
