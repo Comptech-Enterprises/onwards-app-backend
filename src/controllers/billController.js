@@ -104,6 +104,8 @@ async function createBill(req, res) {
       hierarchy.location = allowed.includes(requested) ? requested : me.location;
       hierarchy.cmId = me.id;
       hierarchy.cmName = me.name;
+    } else if (me?.designation === "supervisor" && me.location) {
+      hierarchy.location = me.location;
     }
 
     // Upload all images to Cloudflare R2 under 'bills' folder
