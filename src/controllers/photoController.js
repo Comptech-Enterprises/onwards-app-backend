@@ -35,15 +35,16 @@ async function getAllPhotos(req, res) {
 
   const photos = {};
   for (const row of items) {
-    if (!photos[row.userId]) photos[row.userId] = {};
-    if (!photos[row.userId][row.category]) photos[row.userId][row.category] = [];
-    photos[row.userId][row.category].push(row.photo_url);
+    const key = row.location ? `${row.userId}@${row.location}` : row.userId;
+    if (!photos[key]) photos[key] = {};
+    if (!photos[key][row.category]) photos[key][row.category] = [];
+    photos[key][row.category].push(row.photo_url);
   }
   res.json(photos);
 }
 
 async function uploadPhoto(req, res) {
-  const { category } = req.body;
+  const { category, location } = req.body;
   const userId = req.user.id;
   const periodKey = todayKey();
 
@@ -57,7 +58,9 @@ async function uploadPhoto(req, res) {
   }
 
   const userPeriod = `${userId}#${periodKey}`;
-  const count = await ChecklistPhoto.countDocuments({ userPeriod, category });
+  const countFilter = { userPeriod, category };
+  if (location) countFilter.location = location;
+  const count = await ChecklistPhoto.countDocuments(countFilter);
 
   if (count >= limits.max) {
     return res.status(400).json({ error: `Up to ${limits.max} ${category} photos.` });
@@ -71,12 +74,13 @@ async function uploadPhoto(req, res) {
     userId,
     userPeriod,
     category,
+    location: location || null,
     photo_url: photoUrl,
     uploaded_at: new Date().toISOString(),
     periodKey,
   });
 
-  broadcast("photo_upload", { userId, category, photo_url: photoUrl, periodKey });
+  broadcast("photo_upload", { userId, category, location: location || null, photo_url: photoUrl, periodKey });
 
   res.status(201).json({ ok: true, id, url: photoUrl });
 }

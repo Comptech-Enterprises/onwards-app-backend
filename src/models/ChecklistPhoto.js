@@ -7,6 +7,7 @@ const checklistPhotoSchema = new mongoose.Schema(
     userPeriod: { type: String, required: true, index: true },
     category: { type: String, required: true, index: true },
     periodKey: { type: String, required: true, index: true },
+    location: { type: String, default: null, index: true },
     photo_url: { type: String, required: true },
     uploaded_at: { type: String, default: () => new Date().toISOString() },
   },
