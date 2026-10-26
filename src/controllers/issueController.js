@@ -284,11 +284,6 @@ async function deleteIssue(req, res) {
     return res.status(404).json({ error: "Issue not found." });
   }
 
-  const created = new Date(item.created_at).getTime();
-  if (Date.now() - created >= ISSUE_DELETE_WINDOW_MS) {
-    return res.status(400).json({ error: "Issues can only be deleted within 2 hours of reporting." });
-  }
-
   await Issue.deleteOne({ id: issueId });
   broadcast("issue_deleted", { id: issueId });
 
