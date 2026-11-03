@@ -6,11 +6,12 @@ const bcrypt = require("bcryptjs");
 const RAW_USERS = [
   { id: "m1", name: "Ops Manager", username: "manager", password: "Manager@123", role: "manager", location: "All centres", designation: "ops-head" },
   { id: "m2", name: "Mannat Jain", username: "mannat", password: "Mannat@123", role: "manager", location: "All centres", designation: "marketing-head" },
+  { id: "m-simmi", name: "Simmi Jain", username: "simmi", password: "Simmi@123", role: "manager", location: "All centres", designation: "manager" },
   { id: "m3", name: "Anil Purdhani", username: "anil", password: "Anil@123", role: "manager", location: "All centres", designation: "co-founder" },
   { id: "m-ravi", name: "Ravi Pawar", username: "ravi", password: "password123", role: "manager", location: "All centres", designation: "cluster-manager" },
   { id: "m-abhishek-g", name: "Abhishek Kumar", username: "abhishek.kumar", password: "password123", role: "manager", location: "All centres", designation: "cluster-manager" },
   { id: "e1", name: "Anubhav", username: "anubhav", password: "password123", role: "employee", designation: "cm", location: "E-44/3, Pocket D, Okhla Phase II", manager_id: "m-ravi" },
-  { id: "e2", name: "Arpit Tanwar", username: "arpit", password: "password123", role: "employee", designation: "cm", location: "Okhla Phase 3", manager_id: "m-ravi" },
+  { id: "e2", name: "Bhawna", username: "bhawna", password: "Bhawna@123", role: "employee", designation: "cm", location: "Okhla Phase 3", manager_id: "m-ravi" },
   { id: "e5", name: "Kamal Khanna", username: "kamal", password: "password123", role: "employee", designation: "cm", location: "Noida Sector 126", manager_id: "m-abhishek-g" },
   { id: "e6", name: "Abhishek Dalal", username: "abhishek", password: "password123", role: "employee", designation: "cm", location: "Udyog Vihar Phase 4", manager_id: "m-ravi" },
   { id: "e10", name: "Akanksha Mohanty", username: "akanksha", password: "password123", role: "employee", designation: "cm", location: "ECE House, Connaught Place", manager_id: "m-ravi" },

@@ -11,6 +11,7 @@ const SEED_USERS_EXTRA = [
   { id: "m3", name: "Anil Purdhani", username: "anil", password: "Anil@123", role: "manager", location: "All centres", employeeCode: "OWEMP-0034", designation: "co-founder" },
   { id: "m2", name: "Mannat Jain", username: "mannat", password: "Mannat@123", role: "manager", location: "All centres", employeeCode: "OWEMP-0003", designation: "marketing-head" },
   { id: "m-priyanka-j", name: "Priyanka Jain", username: "priyanka.jain", password: "Priyanka@123", role: "manager", location: "All centres", employeeCode: "OWEMP-0002", designation: "project-design-head" },
+  { id: "m-simmi", name: "Simmi Jain", username: "simmi", password: "Simmi@123", role: "manager", location: "All centres", employeeCode: "OWEMP-0036", designation: "manager" },
   { id: "m-ipshita", name: "Ipshita B. Roy", username: "ipshita", password: "Ipshita@123", role: "manager", location: "All centres", employeeCode: "OWEMP-0029", designation: "hr-manager" },
   { id: "m4", name: "Vineeta Sanduja", username: "vineeta", password: "Vineeta@123", role: "manager", location: "All centres", phone: "8586007404", employeeCode: "OWEMP-0018", designation: "business-ops-head" },
 
@@ -27,7 +28,7 @@ const SEED_USERS_EXTRA = [
   { id: "e-devendra", name: "Devendra Kumar Mehta", username: "devendra", password: "Devendra@123", role: "employee", designation: "maintenance", supervisorId: "m-sandeep", location: "All centres", employeeCode: "OWEMP-0024" },
 
   // Centre Managers
-  { id: "e2", name: "Arpit Tanwar", username: "arpit", password: "Arpit@123", role: "employee", designation: "cm", location: "Okhla Phase 3", employeeCode: "OWEMP-0007", phone: "9717289816", managerId: "m-ravi" },
+  { id: "e2", name: "Bhawna", username: "bhawna", password: "Bhawna@123", role: "employee", designation: "cm", location: "Okhla Phase 3", employeeCode: "OWEMP-0007", managerId: "m-ravi" },
   { id: "e6", name: "Abhishek Dalal", username: "abhishek", password: "Abhishek@123", role: "employee", designation: "cm", location: "Udyog Vihar Phase 4", employeeCode: "OWEMP-0012", phone: "9220407273", managerId: "m-ravi" },
   { id: "e1", name: "Anubhav", username: "anubhav", password: "Anubhav@123", role: "employee", designation: "cm", location: "E-44/3, Pocket D, Okhla Phase II", employeeCode: "OWEMP-0022", phone: "8527445545", managerId: "m-ravi" },
   { id: "e10", name: "Akanksha Mohanty", username: "akanksha", password: "Akanksha@123", role: "employee", designation: "cm", location: "ECE House, Connaught Place", employeeCode: "OWEMP-0032", phone: "8260998500", managerId: "m-ravi" },
