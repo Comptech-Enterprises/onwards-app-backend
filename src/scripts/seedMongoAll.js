@@ -32,14 +32,14 @@ const USERS = [
   { id: "e-devendra", name: "Devendra Kumar Mehta", username: "devendra", password: "Devendra@123", role: "employee", designation: "maintenance", supervisorId: "m-sandeep", location: "All centres", employeeCode: "OWEMP-0024" },
 
   // Centre Managers — under Ravi Pawar
-  { id: "e2", name: "Bhawna", username: "bhawna", password: "Bhawna@123", role: "employee", designation: "cm", location: "Okhla Phase 3", employeeCode: "OWEMP-0007", managerId: "m-ravi" },
-  { id: "e6", name: "Abhishek Dalal", username: "abhishek", password: "Abhishek@123", role: "employee", designation: "cm", location: "Udyog Vihar Phase 4", employeeCode: "OWEMP-0012", phone: "9220407273", managerId: "m-ravi" },
-  { id: "e1", name: "Anubhav", username: "anubhav", password: "Anubhav@123", role: "employee", designation: "cm", location: "E-44/3, Pocket D, Okhla Phase II", employeeCode: "OWEMP-0022", phone: "8527445545", managerId: "m-ravi" },
-  { id: "e10", name: "Akanksha Mohanty", username: "akanksha", password: "Akanksha@123", role: "employee", designation: "cm", location: "ECE House, Connaught Place", employeeCode: "OWEMP-0032", phone: "8260998500", managerId: "m-ravi" },
+  { id: "e2", name: "Bhawna", username: "bhawna", password: "Bhawna@123", role: "employee", designation: "cm", location: "Okhla Phase 3", employeeCode: "OWEMP-0007", managerId: "m-ravi", email: "bhawnadayal@onwardworkspaces.com" },
+  { id: "e6", name: "Abhishek Dalal", username: "abhishek", password: "Abhishek@123", role: "employee", designation: "cm", location: "Udyog Vihar Phase 4", employeeCode: "OWEMP-0012", phone: "9220407273", managerId: "m-ravi", email: "abhishek.dalal@onwardworkspaces.com" },
+  { id: "e1", name: "Anubhav", username: "anubhav", password: "Anubhav@123", role: "employee", designation: "cm", location: "E-44/3, Pocket D, Okhla Phase II", employeeCode: "OWEMP-0022", phone: "8527445545", managerId: "m-ravi", email: "anubhav@onwardworkspaces.com" },
+  { id: "e10", name: "Akanksha Mohanty", username: "akanksha", password: "Akanksha@123", role: "employee", designation: "cm", location: "ECE House, Connaught Place", employeeCode: "OWEMP-0032", phone: "8260998500", managerId: "m-ravi", email: "akanksha.mohanty@onwardworkspaces.com" },
 
   // Centre Managers — under Abhishek Kumar
-  { id: "e5", name: "Kamal Khanna", username: "kamal", password: "Kamal@123", role: "employee", designation: "cm", location: "Noida Sector 126", employeeCode: "OWEMP-0023", phone: "7206605207", managerId: "m-abhishek-g" },
-  { id: "e12", name: "Kartik Sharma", username: "kartik", password: "Kartik@123", role: "employee", designation: "cm", location: "Mohan Cooperative", employeeCode: "OWEMP-0038", managerId: "m-abhishek-g" },
+  { id: "e5", name: "Kamal Khanna", username: "kamal", password: "Kamal@123", role: "employee", designation: "cm", location: "Noida Sector 126", employeeCode: "OWEMP-0023", phone: "7206605207", managerId: "m-abhishek-g", email: "kamal.khanna@onwardworkspaces.com" },
+  { id: "e12", name: "Kartik Sharma", username: "kartik", password: "Kartik@123", role: "employee", designation: "cm", location: "Mohan Cooperative", employeeCode: "OWEMP-0038", managerId: "m-abhishek-g", email: "kartik.sharma@onwardworkspaces.com" },
 
   // Facility Supervisors — under Bhawna
   { id: "e4", name: "Mukund Raj Choudhary", username: "mukund", password: "Mukund@123", role: "employee", designation: "supervisor", supervisorId: "e2", location: "Okhla Phase 3", employeeCode: "OWEMP-0010", phone: "9990325738" },

@@ -235,20 +235,38 @@ async function generateAndSendWeeklyReport(startDate = todayKey(-7), endDate = t
   cmScores.sort((a, b) => b.weeklyPct - a.weeklyPct);
   const avgWeekly = cmScores.length > 0 ? Math.round(cmScores.reduce((s, c) => s + c.weeklyPct, 0) / cmScores.length) : 0;
 
-  let tableRows = cmScores.map((c) => `
-    <tr style="border-bottom: 1px solid #EDF2F7;">
-      <td style="padding: 10px 12px; font-weight: 700; color: #2D3748;">${escapeHtml(c.name)}</td>
+  const topScore = cmScores.length > 0 ? cmScores[0].weeklyPct : 0;
+  const topPerformers = cmScores.filter((c) => c.weeklyPct === topScore);
+  const topNames = topPerformers.map((c) => c.name).join(", ");
+
+  let tableRows = cmScores.map((c) => {
+    const isTop = c.weeklyPct === topScore && topScore > 0;
+    return `
+    <tr style="border-bottom: 1px solid #EDF2F7;${isTop ? ' background: #F0FFF4;' : ''}">
+      <td style="padding: 10px 12px; font-weight: 700; color: #2D3748;">
+        ${isTop ? '&#11088; ' : ''}${escapeHtml(c.name)}
+      </td>
       <td style="padding: 10px 12px; color: #4A5568;">${escapeHtml(c.location)}</td>
       <td style="padding: 10px 12px; color: #718096; font-size: 12px;">${escapeHtml(c.supervisors)}</td>
       <td style="padding: 10px 12px; text-align: center; font-weight: 800; color: ${c.weeklyPct >= 80 ? '#2E7D32' : '#FF5A00'};">
         ${c.weeklyPct}%
       </td>
     </tr>
-  `).join("");
+  `}).join("");
+
+  const topPerformerHtml = topScore > 0 ? `
+      <div style="background: #F0FFF4; border: 1px solid #C6F6D5; border-radius: 8px; padding: 16px; margin-bottom: 24px; text-align: center;">
+        <div style="font-size: 11px; color: #276749; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Top Performer${topPerformers.length > 1 ? 's' : ''} This Week</div>
+        <div style="font-size: 18px; font-weight: 800; color: #2E7D32;">${escapeHtml(topNames)}</div>
+        <div style="font-size: 13px; color: #276749; margin-top: 4px;">Score: ${topScore}%</div>
+      </div>
+  ` : "";
 
   const html = `
     <div style="${getEmailStyles()}">
       ${getHeaderHtml("Weekly Executive Operations Review", `Performance Overview (${startDate} to ${endDate})`, "WEEKLY REPORT")}
+
+      ${topPerformerHtml}
 
       <div style="display: flex; gap: 12px; margin-bottom: 24px;">
         <div style="flex: 1; background: #F7FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; text-align: center;">
@@ -311,24 +329,78 @@ async function generateAndSendMonthlyReport(year = new Date().getFullYear(), mon
   });
 
   const monthName = new Date(year, month - 1, 1).toLocaleString("default", { month: "long", year: "numeric" });
+  const daysInMonth = new Date(year, month, 0).getDate();
 
-  const doneMap = {};
-  for (const c of completions) {
-    doneMap[c.userId] = (doneMap[c.userId] || 0) + 1;
+  // Build weekly boundaries (Mon-Sun) that fall within this month
+  const weeks = [];
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month - 1, daysInMonth);
+  let weekStart = new Date(monthStart);
+  // Align to Monday
+  const dayOfWeek = weekStart.getDay();
+  if (dayOfWeek !== 1) {
+    weekStart.setDate(weekStart.getDate() - ((dayOfWeek + 6) % 7));
+  }
+  while (weekStart <= monthEnd) {
+    const ws = new Date(Math.max(weekStart.getTime(), monthStart.getTime()));
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const we = new Date(Math.min(weekEnd.getTime(), monthEnd.getTime()));
+    weeks.push({
+      start: ws.toISOString().slice(0, 10),
+      end: we.toISOString().slice(0, 10),
+      days: Math.round((we - ws) / 86400000) + 1,
+    });
+    weekStart.setDate(weekStart.getDate() + 7);
   }
 
-  const daysInMonth = new Date(year, month, 0).getDate();
+  // Build per-day completion map for efficient weekly scoring
+  const dayUserMap = {};
+  for (const c of completions) {
+    if (!dayUserMap[c.periodKey]) dayUserMap[c.periodKey] = {};
+    dayUserMap[c.periodKey][c.userId] = (dayUserMap[c.periodKey][c.userId] || 0) + 1;
+  }
+
+  // For each CM, compute weekly scores then average them
   const cmRows = cmList.map((cm) => {
     const supervisors = users.filter((e) => e.supervisor_id === cm.id);
     const team = supervisors.length > 0 ? supervisors : [cm];
-    const totalDone = team.reduce((sum, e) => sum + (doneMap[e.id] || 0), 0);
-    const expected = team.length * 97 * daysInMonth;
-    const score = expected > 0 ? Math.min(100, Math.round((totalDone / expected) * 100)) : 0;
+
+    const weeklyScores = weeks.map((w) => {
+      let totalDone = 0;
+      const d = new Date(w.start);
+      const endD = new Date(w.end);
+      while (d <= endD) {
+        const dk = d.toISOString().slice(0, 10);
+        for (const emp of team) {
+          totalDone += (dayUserMap[dk] && dayUserMap[dk][emp.id]) || 0;
+        }
+        d.setDate(d.getDate() + 1);
+      }
+      const expected = team.length * 97 * w.days;
+      return expected > 0 ? Math.min(100, Math.round((totalDone / expected) * 100)) : 0;
+    });
+
+    const monthlyScore = weeklyScores.length > 0
+      ? Math.round(weeklyScores.reduce((s, v) => s + v, 0) / weeklyScores.length)
+      : 0;
+
+    const totalDone = team.reduce((sum, e) => {
+      let t = 0;
+      for (const dk in dayUserMap) {
+        t += (dayUserMap[dk][e.id] || 0);
+      }
+      return sum + t;
+    }, 0);
+
     return {
+      cmId: cm.id,
       name: cm.name,
+      email: cm.email,
       location: cm.location,
       supervisors: team.map((e) => e.name).join(", "),
-      score,
+      score: monthlyScore,
+      weeklyScores,
       totalDone,
     };
   });
@@ -336,20 +408,38 @@ async function generateAndSendMonthlyReport(year = new Date().getFullYear(), mon
   cmRows.sort((a, b) => b.score - a.score);
   const monthAvg = cmRows.length > 0 ? Math.round(cmRows.reduce((s, c) => s + c.score, 0) / cmRows.length) : 0;
 
-  let tableRows = cmRows.map((r) => `
-    <tr style="border-bottom: 1px solid #EDF2F7;">
-      <td style="padding: 10px 12px; font-weight: 700; color: #2D3748;">${escapeHtml(r.name)}</td>
+  const topScore = cmRows.length > 0 ? cmRows[0].score : 0;
+  const topPerformers = cmRows.filter((c) => c.score === topScore);
+  const topNames = topPerformers.map((c) => c.name).join(", ");
+
+  let tableRows = cmRows.map((r) => {
+    const isTop = r.score === topScore && topScore > 0;
+    return `
+    <tr style="border-bottom: 1px solid #EDF2F7;${isTop ? ' background: #F0FFF4;' : ''}">
+      <td style="padding: 10px 12px; font-weight: 700; color: #2D3748;">
+        ${isTop ? '&#11088; ' : ''}${escapeHtml(r.name)}
+      </td>
       <td style="padding: 10px 12px; color: #4A5568;">${escapeHtml(r.location)}</td>
       <td style="padding: 10px 12px; text-align: center; font-weight: 800; color: ${r.score >= 80 ? '#2E7D32' : '#FF5A00'};">
         ${r.score}%
       </td>
       <td style="padding: 10px 12px; text-align: center; color: #718096; font-size: 12px;">${r.totalDone}</td>
     </tr>
-  `).join("");
+  `}).join("");
+
+  const topPerformerHtml = topScore > 0 ? `
+      <div style="background: #F0FFF4; border: 1px solid #C6F6D5; border-radius: 8px; padding: 16px; margin-bottom: 24px; text-align: center;">
+        <div style="font-size: 11px; color: #276749; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Top Performer${topPerformers.length > 1 ? 's' : ''} — ${escapeHtml(monthName)}</div>
+        <div style="font-size: 18px; font-weight: 800; color: #2E7D32;">${escapeHtml(topNames)}</div>
+        <div style="font-size: 13px; color: #276749; margin-top: 4px;">Monthly Score (Avg of Weekly): ${topScore}%</div>
+      </div>
+  ` : "";
 
   const html = `
     <div style="${getEmailStyles()}">
       ${getHeaderHtml(`Monthly Audit & Operations Report`, `Comprehensive Performance Summary for ${monthName}`, "MONTHLY REPORT")}
+
+      ${topPerformerHtml}
 
       <div style="display: flex; gap: 12px; margin-bottom: 24px;">
         <div style="flex: 1; background: #F7FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; text-align: center;">
@@ -402,7 +492,127 @@ async function generateAndSendMonthlyReport(year = new Date().getFullYear(), mon
     console.error("[CLEANUP] Post-monthly image cleanup error:", err.message);
   }
 
+  // Send individual performance emails to each CM
+  try {
+    await sendMonthlyPerformanceEmailToCMs(cmRows, monthName, topNames, topScore);
+  } catch (err) {
+    console.error("[CM-EMAIL] Monthly CM performance email failed:", err.message);
+  }
+
   return result;
+}
+
+// -------------------------------------------------------------
+// 3b. MONTHLY INDIVIDUAL CM PERFORMANCE EMAIL
+// -------------------------------------------------------------
+async function sendMonthlyPerformanceEmailToCMs(cmRows, monthName, topNames, topScore) {
+  let sent = 0;
+  let skipped = 0;
+
+  const rankingRows = cmRows.map((r, idx) => {
+    const isTop = r.score === topScore && topScore > 0;
+    return `
+    <tr style="border-bottom: 1px solid #EDF2F7;${isTop ? ' background: #F0FFF4;' : ''}">
+      <td style="padding: 8px 12px; font-weight: 600; color: #4A5568;">${idx + 1}</td>
+      <td style="padding: 8px 12px; font-weight: 700; color: #2D3748;">
+        ${isTop ? '&#11088; ' : ''}${escapeHtml(r.name)}
+      </td>
+      <td style="padding: 8px 12px; color: #4A5568;">${escapeHtml(r.location)}</td>
+      <td style="padding: 8px 12px; text-align: center; font-weight: 800; color: ${r.score >= 80 ? '#2E7D32' : '#FF5A00'};">
+        ${r.score}%
+      </td>
+    </tr>
+  `}).join("");
+
+  for (const cm of cmRows) {
+    if (!cm.email) {
+      skipped++;
+      continue;
+    }
+
+    const isTopPerformer = cm.score === topScore && topScore > 0;
+
+    let personalMessage;
+    if (isTopPerformer) {
+      personalMessage = `
+        <div style="background: #F0FFF4; border: 1px solid #C6F6D5; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+          <div style="font-size: 16px; font-weight: 700; color: #2E7D32; margin-bottom: 8px;">
+            Congratulations, ${escapeHtml(cm.name)}! &#127942;
+          </div>
+          <div style="font-size: 14px; color: #276749;">
+            You are the <strong>top performer</strong> for ${escapeHtml(monthName)} with a score of <strong>${cm.score}%</strong>. Good job! Keep up the excellent work.
+          </div>
+        </div>
+      `;
+    } else {
+      personalMessage = `
+        <div style="background: #F7FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+          <div style="font-size: 16px; font-weight: 700; color: #2D3748; margin-bottom: 8px;">
+            Hi ${escapeHtml(cm.name)},
+          </div>
+          <div style="font-size: 14px; color: #4A5568;">
+            Your monthly score for ${escapeHtml(monthName)} is <strong>${cm.score}%</strong>.
+            This month's top performer${topNames.includes(",") ? 's are' : ' is'} <strong>${escapeHtml(topNames)}</strong> with ${topScore}%.
+            Keep pushing — every improvement counts!
+          </div>
+        </div>
+      `;
+    }
+
+    const html = `
+      <div style="${getEmailStyles()}">
+        ${getHeaderHtml("Monthly Performance Report", `Your performance summary for ${escapeHtml(monthName)}`, "PERFORMANCE")}
+
+        ${personalMessage}
+
+        <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+          <div style="flex: 1; background: #FFF0E6; border: 1px solid #FFD1B3; padding: 12px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #A04A00; text-transform: uppercase; font-weight: 600;">Your Score</div>
+            <div style="font-size: 22px; font-weight: 800; color: #FF5A00; margin-top: 4px;">${cm.score}%</div>
+          </div>
+          <div style="flex: 1; background: #F7FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #718096; text-transform: uppercase; font-weight: 600;">Your Rank</div>
+            <div style="font-size: 22px; font-weight: 800; color: #2D3748; margin-top: 4px;">#${cmRows.indexOf(cm) + 1} of ${cmRows.length}</div>
+          </div>
+          <div style="flex: 1; background: #F0FFF4; border: 1px solid #C6F6D5; padding: 12px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #276749; text-transform: uppercase; font-weight: 600;">Top Score</div>
+            <div style="font-size: 22px; font-weight: 800; color: #2E7D32; margin-top: 4px;">${topScore}%</div>
+          </div>
+        </div>
+
+        <h3 style="color: #2D3748; font-size: 14px; margin-bottom: 8px;">Full Ranking — ${escapeHtml(monthName)}</h3>
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+          <thead>
+            <tr style="background: #EDF2F7; color: #4A5568; font-size: 11px; text-transform: uppercase;">
+              <th style="padding: 8px 12px;">Rank</th>
+              <th style="padding: 8px 12px;">CM</th>
+              <th style="padding: 8px 12px;">Centre</th>
+              <th style="padding: 8px 12px; text-align: center;">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rankingRows}
+          </tbody>
+        </table>
+
+        ${getFooterHtml()}
+      </div>
+    `;
+
+    try {
+      await sendMail({
+        to: cm.email,
+        subject: `Your ${monthName} Performance Report — ${cm.score}%`,
+        html,
+      });
+      sent++;
+    } catch (err) {
+      console.error(`[CM-EMAIL] Failed to send to ${cm.email} for ${cm.name}:`, err.message);
+    }
+  }
+
+  console.log(`[CM-EMAIL] Monthly performance emails: ${sent} sent, ${skipped} skipped (no email).`);
+  return { sent, skipped };
 }
 
 // -------------------------------------------------------------
@@ -727,6 +937,7 @@ module.exports = {
   generateAndSendWeeklyReport,
   generateAndSendMonthlyReport,
   generateAndSendQuarterlyReport,
+  sendMonthlyPerformanceEmailToCMs,
   sendDeadlineReminders,
   cleanupMonthlyImages,
   cleanupQuarterlyData,
