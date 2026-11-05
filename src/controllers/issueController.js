@@ -54,7 +54,20 @@ function formatIssue(row) {
 }
 
 async function listIssues(req, res) {
-  const issues = await Issue.find({}).sort({ created_at: -1 });
+  const me = await User.findOne({ id: req.user.id }).lean();
+  let filter = {};
+
+  if (me?.role === "manager") {
+    // Managers see all issues
+  } else if (me?.designation === "cm") {
+    // CM sees only issues where they are the CM, or issues they created
+    filter.$or = [{ cm_id: me.id }, { user_id: me.id }];
+  } else {
+    // Supervisor sees only their own issues
+    filter.$or = [{ user_id: me?.id || req.user.id }];
+  }
+
+  const issues = await Issue.find(filter).sort({ created_at: -1 });
   res.json(issues.map(formatIssue));
 }
 
