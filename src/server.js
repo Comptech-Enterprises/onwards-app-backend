@@ -22,6 +22,7 @@ const summaryRoutes = require("./routes/summary");
 const errorLogRoutes = require("./routes/errorLogs");
 const configRoutes = require("./routes/config");
 const reportsRoutes = require("./routes/reports");
+const notificationRoutes = require("./routes/notifications");
 const { initSchedulers } = require("./jobs/scheduler");
 
 const { sendMail } = require("./services/mailService");
@@ -66,6 +67,7 @@ app.use("/api/summary", summaryRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/error-logs", errorLogRoutes);
 app.use("/api/config", configRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", db: "mongodb", timestamp: new Date().toISOString() });

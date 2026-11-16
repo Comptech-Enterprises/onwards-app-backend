@@ -1,6 +1,7 @@
 const { User, Task, Completion, ChecklistPhoto, Visitor, Issue, UserTask, Alert } = require("../models");
 const { deleteFromR2 } = require("../config/r2");
 const { sendMail, REPORT_RECIPIENTS } = require("./mailService");
+const { sendToUser } = require("./pushService");
 
 function todayKey(offsetDays = 0) {
   const d = new Date();
@@ -303,11 +304,20 @@ async function generateAndSendWeeklyReport(startDate = todayKey(-7), endDate = t
   `;
 
   const recipients = customRecipients || REPORT_RECIPIENTS.weekly;
-  return await sendMail({
+  const mailResult = await sendMail({
     to: recipients,
     subject: `Weekly Operations Performance Report (${startDate} - ${endDate})`,
     html,
   });
+
+  for (const cm of cmScores) {
+    sendToUser(cm.id, {
+      title: "Weekly Performance Report",
+      body: `Your score: ${cm.weeklyPct}%. ${cm.weeklyPct === topScore && topScore > 0 ? "You're the top performer this week!" : `Top: ${topNames} (${topScore}%)`}`,
+    }, { type: "weekly_report" }).catch(() => {});
+  }
+
+  return mailResult;
 }
 
 // -------------------------------------------------------------
@@ -497,6 +507,13 @@ async function generateAndSendMonthlyReport(year = new Date().getFullYear(), mon
     await sendMonthlyPerformanceEmailToCMs(cmRows, monthName, topNames, topScore);
   } catch (err) {
     console.error("[CM-EMAIL] Monthly CM performance email failed:", err.message);
+  }
+
+  for (const cm of cmRows) {
+    sendToUser(cm.cmId, {
+      title: `Monthly Report — ${monthName}`,
+      body: `Your score: ${cm.score}%. ${cm.score === topScore && topScore > 0 ? "Top performer this month!" : `Top: ${topNames} (${topScore}%)`}`,
+    }, { type: "monthly_report" }).catch(() => {});
   }
 
   return result;

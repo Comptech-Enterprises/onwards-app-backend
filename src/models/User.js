@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema(
     employee_code: { type: String, default: null },
     phone: { type: String, default: null },
     is_active: { type: Boolean, default: true },
+    fcm_tokens: [{ type: String }],
   },
   { timestamps: true, collection: "users" }
 );
