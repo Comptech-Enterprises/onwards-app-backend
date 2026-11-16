@@ -2,6 +2,7 @@ const { Issue, User, Alert } = require("../models");
 const { uploadToR2 } = require("../config/r2");
 const { broadcast } = require("../ws");
 const { resolveUserHierarchy } = require("../services/hierarchyService");
+const { sendToUser } = require("../services/pushService");
 
 const ISSUE_DELETE_WINDOW_MS = 2 * 60 * 60 * 1000;
 
@@ -173,6 +174,8 @@ async function createIssue(req, res) {
         body: alertBody,
         createdAt: now,
       });
+
+      sendToUser(hierarchy.clusterManagerId, { title: alertTitle, body: alertBody }, { type: "issue" }).catch(() => {});
     } catch (err) {
       console.error("[ALERT ERROR] Failed to notify Cluster Manager:", err.message);
     }
@@ -274,6 +277,8 @@ async function updateIssueProgress(req, res) {
         body: alertBody,
         createdAt: now,
       });
+
+      sendToUser(recipientUserId, { title: alertTitle, body: alertBody }, { type: "issue_update" }).catch(() => {});
     } catch (err) {
       console.error("[ALERT ERROR] Failed to send progress alert:", err.message);
     }

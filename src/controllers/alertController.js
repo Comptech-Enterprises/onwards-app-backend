@@ -1,4 +1,5 @@
 const { Alert } = require("../models");
+const { sendToUser, sendToMultipleUsers } = require("../services/pushService");
 
 async function getAlerts(req, res) {
   const userId = req.user.id;
@@ -25,6 +26,11 @@ async function createAlert(req, res) {
     is_read: false,
     created_at: new Date().toISOString(),
   });
+
+  const targetId = userId || "BROADCAST";
+  if (targetId !== "BROADCAST") {
+    sendToUser(targetId, { title, body: body || "" }, { type: type || "info", alertId: id }).catch(() => {});
+  }
 
   res.status(201).json({ ok: true, id });
 }

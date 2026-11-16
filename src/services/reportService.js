@@ -847,16 +847,21 @@ async function sendDeadlineReminders(testRecipientOverride = null) {
       pendingCategories[category] = (pendingCategories[category] || 0) + 1;
     }
 
+    const deadlineTitle = `Deadline Reminder: ${pendingCount} pending task${pendingCount > 1 ? "s" : ""}`;
+    const deadlineBody = `You have ${pendingCount} of ${totalAssigned} tasks still pending for today (${today}). Deadline was ${deadline}. Please complete them as soon as possible.`;
+
     await Alert.create({
       id: `a-${Date.now()}-${emp.id}`,
       userId: emp.id,
       type: "warning",
-      title: `Deadline Reminder: ${pendingCount} pending task${pendingCount > 1 ? "s" : ""}`,
-      body: `You have ${pendingCount} of ${totalAssigned} tasks still pending for today (${today}). Deadline was ${deadline}. Please complete them as soon as possible.`,
+      title: deadlineTitle,
+      body: deadlineBody,
       is_read: false,
       created_at: new Date().toISOString(),
     });
     alertsCreated++;
+
+    sendToUser(emp.id, { title: deadlineTitle, body: deadlineBody }, { type: "deadline_reminder" }).catch(() => {});
 
     const recipientEmail = testRecipientOverride || emp.email;
     if (!recipientEmail) {

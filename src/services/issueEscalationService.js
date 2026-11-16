@@ -1,6 +1,7 @@
 const { Issue, User, Alert } = require("../models");
 const { sendMail } = require("./mailService");
 const { broadcast } = require("../ws");
+const { sendToMultipleUsers } = require("./pushService");
 
 const ESCALATION_RECIPIENTS = [
   "vineeta@onwardworkspaces.com",
@@ -227,6 +228,8 @@ async function checkAndEscalateOverdueIssues() {
         body: alertBody,
         issueId: issue.id,
       });
+
+      sendToMultipleUsers([...userIdsToAlert], { title: alertTitle, body: alertBody }, { type: "issue_escalation" }).catch(() => {});
 
       broadcast("issue_updated", {
         id: issue.id,
