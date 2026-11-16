@@ -49,6 +49,13 @@ async function sendToUser(userId, notification, data = {}) {
     data: Object.fromEntries(
       Object.entries(data).map(([k, v]) => [k, String(v)])
     ),
+    android: {
+      notification: {
+        channelId: "onward_default",
+        priority: "high",
+      },
+      priority: "high",
+    },
   };
 
   const results = await Promise.allSettled(
