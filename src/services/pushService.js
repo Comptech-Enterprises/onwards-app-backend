@@ -69,7 +69,8 @@ async function sendToUser(userId, notification, data = {}) {
     if (
       r.status === "rejected" &&
       (r.reason?.code === "messaging/registration-token-not-registered" ||
-        r.reason?.code === "messaging/invalid-registration-token")
+        r.reason?.code === "messaging/invalid-registration-token" ||
+        r.reason?.code === "messaging/mismatched-credential")
     ) {
       staleTokens.push(user.fcm_tokens[i]);
     }
