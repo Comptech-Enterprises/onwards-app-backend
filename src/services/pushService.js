@@ -1,27 +1,12 @@
-const admin = require("firebase-admin");
 const User = require("../models/User");
 
-let initialized = false;
+const FCM_SERVER_KEY = process.env.FCM_SERVER_KEY;
 
-function initFirebase() {
-  if (initialized) return;
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  if (!serviceAccount) {
-    console.warn("[PUSH] FIREBASE_SERVICE_ACCOUNT_JSON not set, push disabled");
-    return;
-  }
-  try {
-    admin.initializeApp({
-      credential: admin.credential.cert(JSON.parse(serviceAccount)),
-    });
-    initialized = true;
-    console.log("[PUSH] Firebase Admin initialized");
-  } catch (err) {
-    console.error("[PUSH] Firebase init error:", err.message);
-  }
+if (FCM_SERVER_KEY) {
+  console.log("[PUSH] FCM server key configured, push enabled");
+} else {
+  console.warn("[PUSH] FCM_SERVER_KEY not set, push disabled");
 }
-
-initFirebase();
 
 async function registerToken(userId, token) {
   if (!token) return;
@@ -39,31 +24,46 @@ async function removeToken(userId, token) {
   );
 }
 
+async function sendPush(fcmToken, notification, data = {}) {
+  const res = await fetch("https://fcm.googleapis.com/fcm/send", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `key=${FCM_SERVER_KEY}`,
+    },
+    body: JSON.stringify({
+      to: fcmToken,
+      notification,
+      data: Object.fromEntries(
+        Object.entries(data).map(([k, v]) => [k, String(v)])
+      ),
+    }),
+  });
+
+  const result = await res.json();
+
+  if (result.failure > 0 && result.results?.[0]?.error) {
+    const err = result.results[0].error;
+    if (err === "NotRegistered" || err === "InvalidRegistration") {
+      return { stale: true };
+    }
+  }
+
+  return { stale: false };
+}
+
 async function sendToUser(userId, notification, data = {}) {
-  if (!initialized) return;
+  if (!FCM_SERVER_KEY) return;
   const user = await User.findOne({ id: userId }).lean();
   if (!user?.fcm_tokens?.length) return;
 
-  const message = {
-    notification,
-    data: Object.fromEntries(
-      Object.entries(data).map(([k, v]) => [k, String(v)])
-    ),
-  };
-
   const results = await Promise.allSettled(
-    user.fcm_tokens.map((token) =>
-      admin.messaging().send({ ...message, token })
-    )
+    user.fcm_tokens.map((token) => sendPush(token, notification, data))
   );
 
   const staleTokens = [];
   results.forEach((r, i) => {
-    if (
-      r.status === "rejected" &&
-      (r.reason?.code === "messaging/registration-token-not-registered" ||
-        r.reason?.code === "messaging/invalid-registration-token")
-    ) {
+    if (r.status === "fulfilled" && r.value?.stale) {
       staleTokens.push(user.fcm_tokens[i]);
     }
   });
